@@ -27,10 +27,10 @@ android {
 
     defaultConfig {
 
-        applicationId = "com.harry.aniyomi-plus"
+        applicationId = "com.harry.aniyomi_plus"
 
         versionCode = 1
-        versionName = "0.1.stabe"
+        versionName = "0.1.dev"
 
         buildConfigField("String", "COMMIT_COUNT", "\"${getCommitCount()}\"")
         buildConfigField("String", "COMMIT_SHA", "\"${getGitSha()}\"")
@@ -72,7 +72,10 @@ android {
         create("benchmark") {
             initWith(release)
 
+            isMinifyEnabled = true
+            isShrinkResources = true
             isDebuggable = false
+
             isProfileable = true
             versionNameSuffix = "-benchmark"
             applicationIdSuffix = ".benchmark"
@@ -88,14 +91,20 @@ android {
         getByName("benchmark").res.srcDirs("src/debug/res")
     }
 
+    androidResources {
+        localeFilters += listOf("en")
+    }
+
+
     splits {
         abi {
             isEnable = true
-            isUniversalApk = true
             reset()
-            include("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+            include("arm64-v8a")
+            isUniversalApk = false
         }
     }
+
 
     packaging {
         jniLibs {
@@ -123,229 +132,233 @@ android {
             )
                 .map { "**/$it.so" }
         }
-        resources {
-            excludes += setOf(
-                "kotlin-tooling-metadata.json",
-                "LICENSE.txt",
-                "META-INF/**/*.properties",
-                "META-INF/**/LICENSE.txt",
-                "META-INF/*.properties",
-                "META-INF/*.version",
-                "META-INF/DEPENDENCIES",
-                "META-INF/LICENSE",
-                "META-INF/NOTICE",
-                "META-INF/README.md",
+        packaging {
+            resources {
+                excludes += setOf(
+                    "META-INF/*.kotlin_module",
+                    "META-INF/LICENSE*",
+                    "META-INF/NOTICE*",
+                    "META-INF/DEPENDENCIES"
+                )
+            }
+        }
+
+
+        dependenciesInfo {
+            includeInApk = Config.includeDependencyInfo
+            includeInBundle = Config.includeDependencyInfo
+        }
+
+        buildFeatures {
+            viewBinding = true
+            buildConfig = true
+
+            // Disable some unused things
+            aidl = false
+            renderScript = false
+            shaders = false
+        }
+
+        lint {
+            abortOnError = false
+            checkReleaseBuilds = false
+
+        }
+    }
+
+    kotlin {
+        compilerOptions {
+            freeCompilerArgs.addAll(
+                "-opt-in=androidx.compose.animation.ExperimentalAnimationApi",
+                "-opt-in=androidx.compose.animation.graphics.ExperimentalAnimationGraphicsApi",
+                "-opt-in=androidx.compose.foundation.ExperimentalFoundationApi",
+                "-opt-in=androidx.compose.foundation.layout.ExperimentalLayoutApi",
+                "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
+                "-opt-in=androidx.compose.ui.ExperimentalComposeUiApi",
+                "-opt-in=coil3.annotation.ExperimentalCoilApi",
+                "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi",
+                "-opt-in=kotlinx.coroutines.FlowPreview",
+                "-opt-in=kotlinx.coroutines.InternalCoroutinesApi",
+                "-opt-in=kotlinx.serialization.ExperimentalSerializationApi",
             )
         }
     }
 
-    dependenciesInfo {
-        includeInApk = Config.includeDependencyInfo
-        includeInBundle = Config.includeDependencyInfo
-    }
-
-    buildFeatures {
-        viewBinding = true
-        buildConfig = true
-
-        // Disable some unused things
-        aidl = false
-        renderScript = false
-        shaders = false
-    }
-
-    lint {
-        abortOnError = false
-        checkReleaseBuilds = false
-    }
-}
-
-kotlin {
-    compilerOptions {
-        freeCompilerArgs.addAll(
-            "-opt-in=androidx.compose.animation.ExperimentalAnimationApi",
-            "-opt-in=androidx.compose.animation.graphics.ExperimentalAnimationGraphicsApi",
-            "-opt-in=androidx.compose.foundation.ExperimentalFoundationApi",
-            "-opt-in=androidx.compose.foundation.layout.ExperimentalLayoutApi",
-            "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
-            "-opt-in=androidx.compose.ui.ExperimentalComposeUiApi",
-            "-opt-in=coil3.annotation.ExperimentalCoilApi",
-            "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi",
-            "-opt-in=kotlinx.coroutines.FlowPreview",
-            "-opt-in=kotlinx.coroutines.InternalCoroutinesApi",
-            "-opt-in=kotlinx.serialization.ExperimentalSerializationApi",
-        )
-    }
-}
-
-dependencies {
-    implementation(projects.i18n)
-    implementation(projects.i18nAniyomi)
-    // TAIL
-    implementation(projects.i18nTail)
-    // TAIL
-    implementation(projects.core.archive)
-    implementation(projects.core.common)
-    implementation(projects.coreMetadata)
-    implementation(projects.sourceApi)
-    implementation(projects.sourceLocal)
-    implementation(projects.data)
-    implementation(projects.domain)
-    implementation(projects.presentationCore)
-    implementation(projects.presentationWidget)
-
-    // Compose
-    implementation(compose.activity)
-    implementation(compose.foundation)
-    implementation(compose.material3.core)
-    implementation(compose.material.icons)
-    implementation(compose.animation)
-    implementation(compose.animation.graphics)
-    debugImplementation(compose.ui.tooling)
-    implementation(compose.ui.tooling.preview)
-    implementation(compose.ui.util)
-
-    implementation(compose.colorpicker)
-    implementation(androidx.interpolator)
-
-    implementation(androidx.paging.runtime)
-    implementation(androidx.paging.compose)
-
-    implementation(libs.bundles.sqlite)
-
-    implementation(kotlinx.reflect)
-    implementation(kotlinx.immutables)
-
-    implementation(platform(kotlinx.coroutines.bom))
-    implementation(kotlinx.bundles.coroutines)
-
-    // AndroidX libraries
-    implementation(androidx.annotation)
-    implementation(androidx.appcompat)
-    implementation(androidx.biometricktx)
-    implementation(androidx.constraintlayout)
-    implementation(aniyomilibs.compose.constraintlayout)
-    implementation(androidx.corektx)
-    implementation(androidx.splashscreen)
-    implementation(androidx.recyclerview)
-    implementation(androidx.viewpager)
-    implementation(androidx.profileinstaller)
-    implementation(aniyomilibs.mediasession)
-
-    implementation(androidx.bundles.lifecycle)
-
-    // Job scheduling
-    implementation(androidx.workmanager)
-
-    // RxJava
-    implementation(libs.rxjava)
-
-    // Networking
-    implementation(libs.bundles.okhttp)
-    implementation(libs.okio)
-    implementation(libs.conscrypt.android) // TLS 1.3 support for Android < 10
-
-    // Data serialization (JSON, protobuf, xml)
-    implementation(kotlinx.bundles.serialization)
-
-    // HTML parser
-    implementation(libs.jsoup)
-
-    // Disk
-    implementation(libs.disklrucache)
-    implementation(libs.unifile)
-    implementation(libs.junrar)
-    // SY -->
-    implementation(libs.zip4j)
-    // SY <--
-
-    // Preferences
-    implementation(libs.preferencektx)
-
-    // Dependency injection
-    implementation(libs.injekt)
-    // SY -->
-    implementation(libs.zip4j)
-    // SY <--
-
-    // Image loading
-    implementation(platform(libs.coil.bom))
-    implementation(libs.bundles.coil)
-    implementation(libs.subsamplingscaleimageview) {
-        exclude(module = "image-decoder")
-    }
-    implementation(libs.image.decoder)
-
-    // UI libraries
-    implementation(libs.material)
-    implementation(libs.flexible.adapter.core)
-    implementation(libs.photoview)
-    implementation(libs.directionalviewpager) {
-        exclude(group = "androidx.viewpager", module = "viewpager")
-    }
-    implementation(libs.insetter)
-    implementation(libs.bundles.richtext)
-    implementation(libs.aboutLibraries.compose)
-    implementation(libs.bundles.voyager)
-    implementation(libs.compose.materialmotion)
-    implementation(libs.swipe)
-    implementation(libs.compose.webview)
-    implementation(libs.compose.grid)
-    implementation(libs.reorderable)
-    implementation(libs.google.api.services.drive)
-    implementation(libs.google.api.client.oauth)
-
-    // Logging
-    implementation(libs.logcat)
-
-    // Shizuku
-    implementation(libs.bundles.shizuku)
-
-    // Tests
-    testImplementation(libs.bundles.test)
-
-    // For detecting memory leaks; see https://square.github.io/leakcanary/
-    // debugImplementation(libs.leakcanary.android)
-
-    implementation(libs.leakcanary.plumber)
-
-    testImplementation(kotlinx.coroutines.test)
-
-    // mpv-android
-    implementation(aniyomilibs.aniyomi.mpv)
-    // FFmpeg-kit
-    implementation(aniyomilibs.ffmpeg.kit)
-    implementation(aniyomilibs.arthenica.smartexceptions)
-    // seeker seek bar
-    implementation(aniyomilibs.seeker)
-    // true type parser
-    implementation(aniyomilibs.truetypeparser)
-    // torrserver
-    implementation(libs.torrentserver)
-    // Cast
-    implementation(libs.bundles.cast)
-    // nanohttpd server
-    implementation(libs.nanohttpd)
-}
-
-androidComponents {
-    beforeVariants { variantBuilder ->
-        // Disables standardBenchmark
-        if (variantBuilder.buildType == "benchmark") {
-            variantBuilder.enable = variantBuilder.productFlavors.containsAll(
-                listOf("default" to "dev"),
-            )
-        }
-    }
-    onVariants(selector().withFlavor("default" to "standard")) {
-        // Only excluding in standard flavor because this breaks
-        // Layout Inspector's Compose tree
-        it.packaging.resources.excludes.add("META-INF/*.version")
-    }
-}
-
-buildscript {
     dependencies {
-        classpath(kotlinx.gradle)
+        implementation(projects.i18n)
+        implementation(projects.i18nAniyomi)
+        // TAIL
+        implementation(projects.i18nTail)
+        // TAIL
+        implementation(projects.core.archive)
+        implementation(projects.core.common)
+        implementation(projects.coreMetadata)
+        implementation(projects.sourceApi)
+        implementation(projects.sourceLocal)
+        implementation(projects.data)
+        implementation(projects.domain)
+        implementation(projects.presentationCore)
+        implementation(projects.presentationWidget)
+
+        // Compose
+        implementation(compose.activity)
+        implementation(compose.foundation)
+        implementation(compose.material3.core)
+        implementation(compose.material.icons)
+        implementation(compose.animation)
+        implementation(compose.animation.graphics)
+        debugImplementation(compose.ui.tooling)
+        implementation(compose.ui.tooling.preview)
+        implementation(compose.ui.util)
+
+        implementation(compose.colorpicker)
+        implementation(androidx.interpolator)
+
+        implementation(androidx.paging.runtime)
+        implementation(androidx.paging.compose)
+
+        implementation(libs.bundles.sqlite)
+
+        implementation(kotlinx.reflect)
+        implementation(kotlinx.immutables)
+
+        implementation(platform(kotlinx.coroutines.bom))
+        implementation(kotlinx.bundles.coroutines)
+
+        // AndroidX libraries
+        implementation(androidx.annotation)
+        implementation(androidx.appcompat)
+        implementation(androidx.biometricktx)
+        implementation(androidx.constraintlayout)
+        implementation(aniyomilibs.compose.constraintlayout)
+        implementation(androidx.corektx)
+        implementation(androidx.splashscreen)
+        implementation(androidx.recyclerview)
+        implementation(androidx.viewpager)
+        implementation(androidx.profileinstaller)
+        implementation(aniyomilibs.mediasession)
+
+        implementation(androidx.bundles.lifecycle)
+
+        // Job scheduling
+        implementation(androidx.workmanager)
+
+        // RxJava
+        implementation(libs.rxjava)
+
+        // Networking
+        implementation(libs.bundles.okhttp)
+        implementation(libs.okio)
+        implementation(libs.conscrypt.android) // TLS 1.3 support for Android < 10
+
+        // Data serialization (JSON, protobuf, xml)
+        implementation(kotlinx.bundles.serialization)
+
+        // HTML parser
+        implementation(libs.jsoup)
+
+        // Disk
+        implementation(libs.disklrucache)
+        implementation(libs.unifile)
+        implementation(libs.junrar)
+        // SY -->
+        implementation(libs.zip4j)
+        // SY <--
+
+        // Preferences
+        implementation(libs.preferencektx)
+
+        // Dependency injection
+        implementation(libs.injekt)
+        // SY -->
+        implementation(libs.zip4j)
+        // SY <--
+
+        // Image loading
+        implementation(platform(libs.coil.bom))
+        implementation(libs.bundles.coil)
+        implementation(libs.subsamplingscaleimageview) {
+            exclude(module = "image-decoder")
+        }
+        implementation(libs.image.decoder)
+
+        // UI libraries
+        implementation(libs.material)
+        implementation(libs.flexible.adapter.core)
+        implementation(libs.photoview)
+        implementation(libs.directionalviewpager) {
+            exclude(group = "androidx.viewpager", module = "viewpager")
+        }
+        implementation(libs.insetter)
+        implementation(libs.bundles.richtext)
+        implementation(libs.aboutLibraries.compose)
+        implementation(libs.bundles.voyager)
+        implementation(libs.compose.materialmotion)
+        implementation(libs.swipe)
+        implementation(libs.compose.webview)
+        implementation(libs.compose.grid)
+        implementation(libs.reorderable)
+        implementation(libs.google.api.services.drive)
+        implementation(libs.google.api.client.oauth)
+
+        // Logging
+        implementation(libs.logcat)
+
+        // Shizuku
+        implementation(libs.bundles.shizuku)
+
+        // Tests
+        testImplementation(libs.bundles.test)
+
+        // For detecting memory leaks; see https://square.github.io/leakcanary/
+        // debugImplementation(libs.leakcanary.android)
+
+        implementation(libs.leakcanary.plumber)
+
+        testImplementation(kotlinx.coroutines.test)
+
+        // mpv-android
+        implementation(aniyomilibs.aniyomi.mpv)
+        // FFmpeg-kit
+        implementation(aniyomilibs.ffmpeg.kit)
+        implementation(aniyomilibs.arthenica.smartexceptions)
+        // seeker seek bar
+        implementation(aniyomilibs.seeker)
+        // true type parser
+        implementation(aniyomilibs.truetypeparser)
+        // torrserver
+        implementation(libs.torrentserver)
+        // Cast
+        implementation(libs.bundles.cast)
+        // nanohttpd server
+        implementation(libs.nanohttpd)
+    }
+
+    androidComponents {
+        beforeVariants { variantBuilder ->
+            // Disables standardBenchmark
+            if (variantBuilder.buildType == "benchmark") {
+                variantBuilder.enable = variantBuilder.productFlavors.containsAll(
+                    listOf("default" to "dev"),
+                )
+            }
+        }
+        onVariants(selector().withFlavor("default" to "standard")) {
+            // Only excluding in standard flavor because this breaks
+            // Layout Inspector's Compose tree
+            it.packaging.resources.excludes.add("META-INF/*.version")
+        }
+    }
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        }
     }
 }
+
+
+    buildscript {
+        dependencies {
+            classpath(kotlinx.gradle)
+        }
+    }
