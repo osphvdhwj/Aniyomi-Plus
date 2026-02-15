@@ -295,18 +295,22 @@ class PlayerViewModel @JvmOverloads constructor(
     private val _primaryButton = MutableStateFlow<CustomButton?>(null)
     val primaryButton = _primaryButton.asStateFlow()
 
-    // --- SPEED HOLD FEATURE START ---
+    // --- SPEED HOLD FEATURE ---
+
     private var originalSpeed: Double = 1.0
 
     // UI States
     var isHoldingSpeed by mutableStateOf(false)
+
+    // Logic state: Are we physically dragging?
     var isSpeedDragMode by mutableStateOf(false)
+
+    // Visual state: Should the long pill list be visible?
+    var isSpeedListVisible by mutableStateOf(false) // <--- NEW STATE
 
     // Values
     var currentHoldSpeed by mutableDoubleStateOf(1.0)
     var highlightedSpeedIndex by mutableIntStateOf(0)
-
-    // Store custom speeds list
     var availableHoldSpeeds: List<Double> = emptyList()
 
     // Internal Logic
@@ -317,26 +321,24 @@ class PlayerViewModel @JvmOverloads constructor(
         originalSpeed = MPVLib.getPropertyDouble("speed") ?: 1.0
         val defaultSpeed = gesturePreferences.defaultHoldSpeed().get().toDouble()
 
-        // 1. Reset states
         isHoldingSpeed = true
         isSpeedDragMode = false
+        isSpeedListVisible = false // Start collapsed (small pill)
         speedDragAccumulator = 0f
 
-        // 2. Apply Default Speed immediately
         currentHoldSpeed = defaultSpeed
         MPVLib.setPropertyDouble("speed", currentHoldSpeed)
 
-        // 3. Prepare the list for Drag Mode (load from prefs)
         val rawListString = gesturePreferences.customHoldSpeeds().get()
         val parsedList = try {
             rawListString.split(",").mapNotNull { it.trim().toDoubleOrNull() }.sorted()
         } catch (e: Exception) {
-            listOf(0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0) // Fallback list
+            listOf(0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0)
         }
 
         availableHoldSpeeds = if (parsedList.isNotEmpty()) parsedList else listOf(1.0, 2.0, 3.0)
 
-        // Highlight the closest value in the list to our current hold speed
+        // Find closest index
         var closestIndex = 0
         var minDiff = Double.MAX_VALUE
         for (i in availableHoldSpeeds.indices) {
@@ -352,11 +354,12 @@ class PlayerViewModel @JvmOverloads constructor(
     fun onHoldSpeedDrag(dragAmount: Float) {
         if (!isHoldingSpeed) return
 
-        // 1. Threshold Check (don't activate drag mode for tiny jitters)
+        // 1. Threshold Check
         if (!isSpeedDragMode) {
             speedDragAccumulator += dragAmount
             if (Math.abs(speedDragAccumulator) > 40f) {
                 isSpeedDragMode = true
+                isSpeedListVisible = true // Show the list as soon as drag starts
                 speedDragAccumulator = 0f
             } else {
                 return
@@ -365,25 +368,33 @@ class PlayerViewModel @JvmOverloads constructor(
 
         // 2. Drag Logic
         speedDragAccumulator += dragAmount
-        val stepThreshold = 50f // Sensitivity: 50px per step
+        val stepThreshold = 50f
 
         if (Math.abs(speedDragAccumulator) > stepThreshold) {
             val steps = (speedDragAccumulator / stepThreshold).toInt()
 
             if (availableHoldSpeeds.isNotEmpty()) {
-                // Determine new index
                 val newIndex = (highlightedSpeedIndex + steps).coerceIn(0, availableHoldSpeeds.lastIndex)
 
+                // If the index actually changed (user moved to a new speed)
                 if (newIndex != highlightedSpeedIndex) {
                     highlightedSpeedIndex = newIndex
 
-                    // Debounce: Wait 150ms before applying speed change
+                    // Show the list again because user is actively changing values
+                    isSpeedListVisible = true
+
+                    // Debounce: Wait 300ms before applying speed
                     speedSelectionJob?.cancel()
                     speedSelectionJob = viewModelScope.launch {
-                        delay(150)
-                        if (isHoldingSpeed && isSpeedDragMode) {
+                        delay(1000) // 300ms to 1000 wait
+
+                        if (isHoldingSpeed) {
+                            // 1. Commit the speed
                             currentHoldSpeed = availableHoldSpeeds[highlightedSpeedIndex]
                             MPVLib.setPropertyDouble("speed", currentHoldSpeed)
+
+                            // 2. Collapse the UI back to small pill
+                            isSpeedListVisible = false
                         }
                     }
                 }
@@ -396,8 +407,8 @@ class PlayerViewModel @JvmOverloads constructor(
         if (isHoldingSpeed) {
             isHoldingSpeed = false
             isSpeedDragMode = false
+            isSpeedListVisible = false // Ensure it closes
             speedSelectionJob?.cancel()
-            // Restore original speed
             MPVLib.setPropertyDouble("speed", originalSpeed)
         }
     }

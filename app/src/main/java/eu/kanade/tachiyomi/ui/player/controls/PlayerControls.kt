@@ -133,6 +133,8 @@ fun PlayerControls(
         animationSpec = playerControlsExitAnimationSpec(),
         label = "controls_transparent_overlay",
     )
+    // ... inside PlayerControls Composable ...
+
     GestureHandler(
         viewModel = viewModel,
         interactionSource = interactionSource,
@@ -145,9 +147,12 @@ fun PlayerControls(
             contentAlignment = Alignment.TopCenter
         ) {
             SpeedHoldOverlay(
-                isDragMode = viewModel.isSpeedDragMode,
+                // CHANGED: Use isSpeedListVisible instead of isSpeedDragMode
+                // If false: Small Pill (e.g. "2.0x")
+                // If true: Long List Pill (e.g. "1.0x  1.5x  2.0x")
+                isDragMode = viewModel.isSpeedListVisible,
+
                 currentSpeed = viewModel.currentHoldSpeed,
-                // Ensure this matches the property name in ViewModel
                 availableSpeeds = viewModel.availableHoldSpeeds,
                 selectedIndex = viewModel.highlightedSpeedIndex,
                 modifier = Modifier.padding(top = 48.dp)
