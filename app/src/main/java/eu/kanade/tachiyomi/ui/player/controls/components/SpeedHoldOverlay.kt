@@ -34,23 +34,23 @@ fun SpeedHoldOverlay(
                 color = Color.Black.copy(alpha = 0.6f),
                 shape = RoundedCornerShape(24.dp)
             )
-            .padding(horizontal = 12.dp, vertical = 4.dp), // Compact Padding
+            .padding(horizontal = 12.dp, vertical = 6.dp),
         contentAlignment = Alignment.Center
     ) {
         if (!isDragMode) {
-            // --- MODE 1: Simple Hold (Just 2.0x) ---
+            // --- MODE 1: Simple Hold ---
             Text(
-                text = "${String.format(Locale.US, "%.2f", currentSpeed).trimEnd('0').trimEnd('.')}x",
+                // Format: "2.0x"
+                text = String.format(Locale.US, "%.1fx", currentSpeed),
                 color = Color.White,
-                fontSize = 14.sp, // Compact Font
+                fontSize = 16.sp,
                 fontWeight = FontWeight.Bold
             )
         } else {
-            // --- MODE 2: Drag Selector (List) ---
+            // --- MODE 2: Drag Selector ---
             val listState = rememberLazyListState()
 
             LaunchedEffect(selectedIndex) {
-                // Keep selected item centered
                 listState.animateScrollToItem(
                     index = (selectedIndex - 2).coerceAtLeast(0)
                 )
@@ -58,17 +58,18 @@ fun SpeedHoldOverlay(
 
             LazyRow(
                 state = listState,
-                horizontalArrangement = Arrangement.spacedBy(12.dp), // Closer spacing
-                modifier = Modifier.widthIn(max = 200.dp), // Limit max width
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.widthIn(max = 240.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 itemsIndexed(availableSpeeds) { index, speed ->
                     val isSelected = index == selectedIndex
-                    val color = if (isSelected) Color(0xFF64B5F6) else Color.White.copy(alpha = 0.5f) // Blue if selected
-                    val size = if (isSelected) 18.sp else 12.sp
+                    val color = if (isSelected) Color(0xFF64B5F6) else Color.White.copy(alpha = 0.5f)
+                    val size = if (isSelected) 18.sp else 14.sp
 
                     Text(
-                        text = "${String.format(Locale.US, "%.1f", speed).trimEnd('0').trimEnd('.')}",
+                        // Format: "2.0x" even in list
+                        text = String.format(Locale.US, "%.1fx", speed),
                         color = color,
                         fontSize = size,
                         fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Medium

@@ -37,5 +37,5 @@ class GesturePreferences(
     fun defaultHoldSpeed() = preferenceStore.getFloat("pref_default_hold_speed", 2.0f)
 
     // New: Stores the comma-separated list for the DRAG menu (e.g. "1.0, 2.0, 3.0")
-    fun customHoldSpeeds() = preferenceStore.getString("pref_custom_hold_speeds", "1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 3.0, 4.0")
+    fun customHoldSpeeds() = preferenceStore.getString("pref_custom_hold_speeds", "0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0")
 }

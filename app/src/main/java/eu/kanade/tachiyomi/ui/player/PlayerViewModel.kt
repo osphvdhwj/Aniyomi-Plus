@@ -296,7 +296,6 @@ class PlayerViewModel @JvmOverloads constructor(
     val primaryButton = _primaryButton.asStateFlow()
 
     // --- SPEED HOLD FEATURE START ---
-
     private var originalSpeed: Double = 1.0
 
     // UI States
@@ -307,7 +306,7 @@ class PlayerViewModel @JvmOverloads constructor(
     var currentHoldSpeed by mutableDoubleStateOf(1.0)
     var highlightedSpeedIndex by mutableIntStateOf(0)
 
-    // Single Declaration of the list
+    // Store custom speeds list
     var availableHoldSpeeds: List<Double> = emptyList()
 
     // Internal Logic
@@ -327,20 +326,17 @@ class PlayerViewModel @JvmOverloads constructor(
         currentHoldSpeed = defaultSpeed
         MPVLib.setPropertyDouble("speed", currentHoldSpeed)
 
-        // 3. Prepare the list for Drag Mode
+        // 3. Prepare the list for Drag Mode (load from prefs)
         val rawListString = gesturePreferences.customHoldSpeeds().get()
-        // Simple parsing logic without complex 'let' chains that cause ambiguity
         val parsedList = try {
-            rawListString.split(",").mapNotNull {
-                it.trim().toDoubleOrNull()
-            }.sorted()
+            rawListString.split(",").mapNotNull { it.trim().toDoubleOrNull() }.sorted()
         } catch (e: Exception) {
-            listOf(1.0, 2.0, 3.0)
+            listOf(0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0) // Fallback list
         }
 
         availableHoldSpeeds = if (parsedList.isNotEmpty()) parsedList else listOf(1.0, 2.0, 3.0)
 
-        // Highlight the closest value
+        // Highlight the closest value in the list to our current hold speed
         var closestIndex = 0
         var minDiff = Double.MAX_VALUE
         for (i in availableHoldSpeeds.indices) {
@@ -356,7 +352,7 @@ class PlayerViewModel @JvmOverloads constructor(
     fun onHoldSpeedDrag(dragAmount: Float) {
         if (!isHoldingSpeed) return
 
-        // 1. Threshold Check
+        // 1. Threshold Check (don't activate drag mode for tiny jitters)
         if (!isSpeedDragMode) {
             speedDragAccumulator += dragAmount
             if (Math.abs(speedDragAccumulator) > 40f) {
@@ -369,18 +365,19 @@ class PlayerViewModel @JvmOverloads constructor(
 
         // 2. Drag Logic
         speedDragAccumulator += dragAmount
-        val stepThreshold = 50f
+        val stepThreshold = 50f // Sensitivity: 50px per step
 
         if (Math.abs(speedDragAccumulator) > stepThreshold) {
             val steps = (speedDragAccumulator / stepThreshold).toInt()
 
             if (availableHoldSpeeds.isNotEmpty()) {
+                // Determine new index
                 val newIndex = (highlightedSpeedIndex + steps).coerceIn(0, availableHoldSpeeds.lastIndex)
 
                 if (newIndex != highlightedSpeedIndex) {
                     highlightedSpeedIndex = newIndex
 
-                    // Debounce: Wait 150ms before applying speed
+                    // Debounce: Wait 150ms before applying speed change
                     speedSelectionJob?.cancel()
                     speedSelectionJob = viewModelScope.launch {
                         delay(150)
@@ -400,6 +397,7 @@ class PlayerViewModel @JvmOverloads constructor(
             isHoldingSpeed = false
             isSpeedDragMode = false
             speedSelectionJob?.cancel()
+            // Restore original speed
             MPVLib.setPropertyDouble("speed", originalSpeed)
         }
     }
@@ -411,8 +409,6 @@ class PlayerViewModel @JvmOverloads constructor(
                 val buttons = getCustomButtons.getAll()
                 buttons.firstOrNull { it.isFavorite }?.let {
                     _primaryButton.update { _ -> it }
-                    // If the button text is not empty, it has been set buy a lua script in which
-                    // case we don't want to override it
                     if (_primaryButtonTitle.value.isEmpty()) {
                         setPrimaryCustomButtonTitle(it)
                     }

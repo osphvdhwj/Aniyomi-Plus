@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -129,34 +130,32 @@ object PlayerSettingsGesturesScreen : SearchableSettings {
         )
     }
 
+// ... imports ...
+
     @Composable
     private fun getLongPressGroup(gesturePreferences: GesturePreferences): Preference.PreferenceGroup {
-        // We will read the Float preference, but for the UI we treat it as text logic
-        val defaultHoldSpeedPref = gesturePreferences.defaultHoldSpeed()
-        val customHoldSpeedsPref = gesturePreferences.customHoldSpeeds()
+        val defaultHoldSpeed = gesturePreferences.defaultHoldSpeed()
+        val customHoldSpeeds = gesturePreferences.customHoldSpeeds()
 
         return Preference.PreferenceGroup(
             title = "Hold to Speed",
             preferenceItems = persistentListOf(
-                // Use a custom TextPreference that opens a dialog, or assume EditTextPreference handles String inputs.
-                // NOTE: If EditTextPreference in your codebase strictly requires Preference<String>,
-                // we cannot pass Preference<Float>.
-
-                // WORKAROUND: Since defaultHoldSpeed is Float, we can use a Slider or a custom dialog.
-                // But you specifically asked for custom values like 4.78.
-                // Ideally, change the preference type to String in GesturePreferences.kt
-                // OR allow EditTextPreference to handle non-String prefs via a transform.
-
-                // Assuming standard Aniyomi EditTextPreference implementation:
+                // FIXED: Use SliderPreference for Float preference
+                Preference.PreferenceItem.SliderPreference(
+                    value = defaultHoldSpeed.get().toInt(),
+                    valueRange = 1..5, // Adjust max if you want up to 10
+                    title = "Default hold speed",
+                    subtitle = "${defaultHoldSpeed.get()}x",
+                    onValueChanged = {
+                        defaultHoldSpeed.set(it.toFloat())
+                        true
+                    },
+                ),
+                // Custom List is a String preference, so EditText works
                 Preference.PreferenceItem.EditTextPreference(
-                    // We must CAST or WRAP this if the underlying component demands String.
-                    // If you cannot change the underlying component, use the custom list logic below
-                    // and keep the default speed as a slider for simplicity, OR use a ListPreference.
-
-                    // LET'S USE THE STRING PREFERENCE FOR CUSTOM VALUES:
-                    preference = customHoldSpeedsPref,
+                    preference = customHoldSpeeds,
                     title = "Drag speeds list",
-                    subtitle = "Comma separated (e.g. 1.0, 2.0, 2.5)",
+                    subtitle = "Comma separated (e.g. 0.5, 1.0, 2.0)",
                     onValueChanged = { newValue ->
                         try {
                             val list = newValue.split(",").map { it.trim().toDouble() }
@@ -164,24 +163,11 @@ object PlayerSettingsGesturesScreen : SearchableSettings {
                         } catch (e: Exception) { false }
                     }
                 ),
-
-                // For the Default Speed, let's keep it robust as a Slider for 1-5x
-                // to avoid the Type Mismatch error for now, UNLESS you change GesturePreferences
-                // to store it as a String.
-                Preference.PreferenceItem.SliderPreference(
-                    value = defaultHoldSpeedPref.get().toInt(),
-                    valueRange = 1..5,
-                    title = "Default hold speed (Approx)",
-                    subtitle = "${defaultHoldSpeedPref.get()}x",
-                    onValueChanged = {
-                        defaultHoldSpeedPref.set(it.toFloat())
-                        true
-                    }
-                )
             ),
         )
     }
 
+    // ...
     @Composable
     private fun getDoubleTapGroup(gesturePreferences: GesturePreferences): Preference.PreferenceGroup {
         val leftDoubleTap = gesturePreferences.leftDoubleTapGesture()
@@ -282,7 +268,7 @@ object PlayerSettingsGesturesScreen : SearchableSettings {
         onDismissRequest: () -> Unit,
         onValueChanged: (skipIntroLength: Int) -> Unit,
     ) {
-        val skipIntroLengthValue by rememberSaveable { mutableStateOf(initialSkipIntroLength) }
+        val skipIntroLengthValue by rememberSaveable { mutableIntStateOf(initialSkipIntroLength) }
         var newLength = 0
         AlertDialog(
             onDismissRequest = onDismissRequest,
