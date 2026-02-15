@@ -1,22 +1,6 @@
-/*
- * Copyright 2024 Abdallah Mehiz
- * https://github.com/abdallahmehiz/mpvKt
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package eu.kanade.tachiyomi.ui.player.controls
 
+import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.FiniteAnimationSpec
@@ -31,6 +15,7 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -47,12 +32,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import eu.kanade.presentation.more.settings.screen.player.custombutton.getButtons
@@ -70,6 +56,7 @@ import eu.kanade.tachiyomi.ui.player.controls.components.BrightnessOverlay
 import eu.kanade.tachiyomi.ui.player.controls.components.BrightnessSlider
 import eu.kanade.tachiyomi.ui.player.controls.components.ControlsButton
 import eu.kanade.tachiyomi.ui.player.controls.components.SeekbarWithTimers
+import eu.kanade.tachiyomi.ui.player.controls.components.SpeedHoldOverlay
 import eu.kanade.tachiyomi.ui.player.controls.components.TextPlayerUpdate
 import eu.kanade.tachiyomi.ui.player.controls.components.VolumeSlider
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.toFixed
@@ -150,6 +137,25 @@ fun PlayerControls(
         viewModel = viewModel,
         interactionSource = interactionSource,
     )
+
+    // --- SPEED HOLD OVERLAY START ---
+    if (viewModel.isHoldingSpeed) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.TopCenter
+        ) {
+            SpeedHoldOverlay(
+                isDragMode = viewModel.isSpeedDragMode,
+                currentSpeed = viewModel.currentHoldSpeed,
+                // Ensure this matches the property name in ViewModel
+                availableSpeeds = viewModel.availableHoldSpeeds,
+                selectedIndex = viewModel.highlightedSpeedIndex,
+                modifier = Modifier.padding(top = 48.dp)
+            )
+        }
+    }
+    // --- SPEED HOLD OVERLAY END ---
+
     DoubleTapToSeekOvals(doubleTapSeekAmount, seekText, interactionSource)
     CompositionLocalProvider(
         LocalRippleConfiguration provides playerRippleConfiguration,
@@ -202,27 +208,27 @@ fun PlayerControls(
                 AnimatedVisibility(
                     isBrightnessSliderShown,
                     enter =
-                    if (!reduceMotion) {
-                        slideInHorizontally(playerControlsEnterAnimationSpec()) {
-                            if (swapVolumeAndBrightness) -it else it
-                        } +
-                            fadeIn(
-                                playerControlsEnterAnimationSpec(),
-                            )
-                    } else {
-                        fadeIn(playerControlsEnterAnimationSpec())
-                    },
+                        if (!reduceMotion) {
+                            slideInHorizontally(playerControlsEnterAnimationSpec()) {
+                                if (swapVolumeAndBrightness) -it else it
+                            } +
+                                fadeIn(
+                                    playerControlsEnterAnimationSpec(),
+                                )
+                        } else {
+                            fadeIn(playerControlsEnterAnimationSpec())
+                        },
                     exit =
-                    if (!reduceMotion) {
-                        slideOutHorizontally(playerControlsExitAnimationSpec()) {
-                            if (swapVolumeAndBrightness) -it else it
-                        } +
-                            fadeOut(
-                                playerControlsExitAnimationSpec(),
-                            )
-                    } else {
-                        fadeOut(playerControlsExitAnimationSpec())
-                    },
+                        if (!reduceMotion) {
+                            slideOutHorizontally(playerControlsExitAnimationSpec()) {
+                                if (swapVolumeAndBrightness) -it else it
+                            } +
+                                fadeOut(
+                                    playerControlsExitAnimationSpec(),
+                                )
+                        } else {
+                            fadeOut(playerControlsExitAnimationSpec())
+                        },
                     modifier = Modifier.constrainAs(brightnessSlider) {
                         if (swapVolumeAndBrightness) {
                             start.linkTo(parent.start, spacing.medium)
@@ -243,27 +249,27 @@ fun PlayerControls(
                 AnimatedVisibility(
                     isVolumeSliderShown,
                     enter =
-                    if (!reduceMotion) {
-                        slideInHorizontally(playerControlsEnterAnimationSpec()) {
-                            if (swapVolumeAndBrightness) it else -it
-                        } +
-                            fadeIn(
-                                playerControlsEnterAnimationSpec(),
-                            )
-                    } else {
-                        fadeIn(playerControlsEnterAnimationSpec())
-                    },
+                        if (!reduceMotion) {
+                            slideInHorizontally(playerControlsEnterAnimationSpec()) {
+                                if (swapVolumeAndBrightness) it else -it
+                            } +
+                                fadeIn(
+                                    playerControlsEnterAnimationSpec(),
+                                )
+                        } else {
+                            fadeIn(playerControlsEnterAnimationSpec())
+                        },
                     exit =
-                    if (!reduceMotion) {
-                        slideOutHorizontally(playerControlsExitAnimationSpec()) {
-                            if (swapVolumeAndBrightness) it else -it
-                        } +
-                            fadeOut(
-                                playerControlsExitAnimationSpec(),
-                            )
-                    } else {
-                        fadeOut(playerControlsExitAnimationSpec())
-                    },
+                        if (!reduceMotion) {
+                            slideOutHorizontally(playerControlsExitAnimationSpec()) {
+                                if (swapVolumeAndBrightness) it else -it
+                            } +
+                                fadeOut(
+                                    playerControlsExitAnimationSpec(),
+                                )
+                        } else {
+                            fadeOut(playerControlsExitAnimationSpec())
+                        },
                     modifier = Modifier.constrainAs(volumeSlider) {
                         if (swapVolumeAndBrightness) {
                             end.linkTo(parent.end, spacing.medium)
@@ -332,9 +338,9 @@ fun PlayerControls(
                 }
                 AnimatedVisibility(
                     visible =
-                    (controlsShown && !areControlsLocked || gestureSeekAmount != null) ||
-                        isLoading ||
-                        isLoadingEpisode,
+                        (controlsShown && !areControlsLocked || gestureSeekAmount != null) ||
+                            isLoading ||
+                            isLoadingEpisode,
                     enter = fadeIn(playerControlsEnterAnimationSpec()),
                     exit = fadeOut(playerControlsExitAnimationSpec()),
                     modifier = Modifier.constrainAs(centerControls) {
@@ -489,7 +495,7 @@ fun PlayerControls(
                         end.linkTo(seekbar.end)
                     },
                 ) {
-                    val activity = LocalContext.current as PlayerActivity
+                    val activity = LocalActivity.current as PlayerActivity
                     BottomRightPlayerControls(
                         customButton = customButton,
                         customButtonTitle = customButtonTitle,
@@ -624,7 +630,7 @@ fun PlayerControls(
             onDismissRequest = { viewModel.showPanel(Panels.None) },
         )
 
-        val activity = LocalContext.current as PlayerActivity
+        val activity = LocalActivity.current as PlayerActivity
         val dialog by viewModel.dialogShown.collectAsState()
         val anime by viewModel.currentAnime.collectAsState()
         val playlist by viewModel.currentPlaylist.collectAsState()

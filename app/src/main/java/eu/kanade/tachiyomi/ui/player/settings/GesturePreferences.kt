@@ -33,4 +33,9 @@ class GesturePreferences(
     fun mediaPreviousGesture() = preferenceStore.getEnum("pref_media_previous", SingleActionGesture.Switch)
     fun mediaPlayPauseGesture() = preferenceStore.getEnum("pref_media_playpause", SingleActionGesture.PlayPause)
     fun mediaNextGesture() = preferenceStore.getEnum("pref_media_next", SingleActionGesture.Switch)
+    // Changed to 2.0f default. This stores the single speed used when you just HOLD.
+    fun defaultHoldSpeed() = preferenceStore.getFloat("pref_default_hold_speed", 2.0f)
+
+    // New: Stores the comma-separated list for the DRAG menu (e.g. "1.0, 2.0, 3.0")
+    fun customHoldSpeeds() = preferenceStore.getString("pref_custom_hold_speeds", "1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 3.0, 4.0")
 }

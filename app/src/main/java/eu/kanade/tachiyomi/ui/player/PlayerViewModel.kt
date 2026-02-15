@@ -1,20 +1,3 @@
-/*
- * Copyright 2024 Abdallah Mehiz
- * https://github.com/abdallahmehiz/mpvKt
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 /**
  * Code is a mix between PlayerViewModel from mpvKt and the former
  * PlayerViewModel from Aniyomi.
@@ -31,6 +14,11 @@ import android.provider.Settings
 import android.util.DisplayMetrics
 import android.view.inputmethod.InputMethodManager
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableDoubleStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -306,6 +294,116 @@ class PlayerViewModel @JvmOverloads constructor(
 
     private val _primaryButton = MutableStateFlow<CustomButton?>(null)
     val primaryButton = _primaryButton.asStateFlow()
+
+    // --- SPEED HOLD FEATURE START ---
+
+    private var originalSpeed: Double = 1.0
+
+    // UI States
+    var isHoldingSpeed by mutableStateOf(false)
+    var isSpeedDragMode by mutableStateOf(false)
+
+    // Values
+    var currentHoldSpeed by mutableDoubleStateOf(1.0)
+    var highlightedSpeedIndex by mutableIntStateOf(0)
+
+    // Single Declaration of the list
+    var availableHoldSpeeds: List<Double> = emptyList()
+
+    // Internal Logic
+    private var speedDragAccumulator = 0f
+    private var speedSelectionJob: Job? = null
+
+    fun onHoldSpeedStart() {
+        originalSpeed = MPVLib.getPropertyDouble("speed") ?: 1.0
+        val defaultSpeed = gesturePreferences.defaultHoldSpeed().get().toDouble()
+
+        // 1. Reset states
+        isHoldingSpeed = true
+        isSpeedDragMode = false
+        speedDragAccumulator = 0f
+
+        // 2. Apply Default Speed immediately
+        currentHoldSpeed = defaultSpeed
+        MPVLib.setPropertyDouble("speed", currentHoldSpeed)
+
+        // 3. Prepare the list for Drag Mode
+        val rawListString = gesturePreferences.customHoldSpeeds().get()
+        // Simple parsing logic without complex 'let' chains that cause ambiguity
+        val parsedList = try {
+            rawListString.split(",").mapNotNull {
+                it.trim().toDoubleOrNull()
+            }.sorted()
+        } catch (e: Exception) {
+            listOf(1.0, 2.0, 3.0)
+        }
+
+        availableHoldSpeeds = if (parsedList.isNotEmpty()) parsedList else listOf(1.0, 2.0, 3.0)
+
+        // Highlight the closest value
+        var closestIndex = 0
+        var minDiff = Double.MAX_VALUE
+        for (i in availableHoldSpeeds.indices) {
+            val diff = Math.abs(availableHoldSpeeds[i] - defaultSpeed)
+            if (diff < minDiff) {
+                minDiff = diff
+                closestIndex = i
+            }
+        }
+        highlightedSpeedIndex = closestIndex
+    }
+
+    fun onHoldSpeedDrag(dragAmount: Float) {
+        if (!isHoldingSpeed) return
+
+        // 1. Threshold Check
+        if (!isSpeedDragMode) {
+            speedDragAccumulator += dragAmount
+            if (Math.abs(speedDragAccumulator) > 40f) {
+                isSpeedDragMode = true
+                speedDragAccumulator = 0f
+            } else {
+                return
+            }
+        }
+
+        // 2. Drag Logic
+        speedDragAccumulator += dragAmount
+        val stepThreshold = 50f
+
+        if (Math.abs(speedDragAccumulator) > stepThreshold) {
+            val steps = (speedDragAccumulator / stepThreshold).toInt()
+
+            if (availableHoldSpeeds.isNotEmpty()) {
+                val newIndex = (highlightedSpeedIndex + steps).coerceIn(0, availableHoldSpeeds.lastIndex)
+
+                if (newIndex != highlightedSpeedIndex) {
+                    highlightedSpeedIndex = newIndex
+
+                    // Debounce: Wait 150ms before applying speed
+                    speedSelectionJob?.cancel()
+                    speedSelectionJob = viewModelScope.launch {
+                        delay(150)
+                        if (isHoldingSpeed && isSpeedDragMode) {
+                            currentHoldSpeed = availableHoldSpeeds[highlightedSpeedIndex]
+                            MPVLib.setPropertyDouble("speed", currentHoldSpeed)
+                        }
+                    }
+                }
+            }
+            speedDragAccumulator -= (steps * stepThreshold)
+        }
+    }
+
+    fun onHoldSpeedEnd() {
+        if (isHoldingSpeed) {
+            isHoldingSpeed = false
+            isSpeedDragMode = false
+            speedSelectionJob?.cancel()
+            MPVLib.setPropertyDouble("speed", originalSpeed)
+        }
+    }
+    // --- SPEED HOLD FEATURE END ---
 
     init {
         viewModelScope.launchIO {
@@ -773,7 +871,7 @@ class PlayerViewModel @JvmOverloads constructor(
             ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE,
             ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE,
             ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE,
-            -> {
+                -> {
                 playerPreferences.defaultPlayerOrientationType().set(PlayerOrientation.SensorPortrait)
                 ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
             }
