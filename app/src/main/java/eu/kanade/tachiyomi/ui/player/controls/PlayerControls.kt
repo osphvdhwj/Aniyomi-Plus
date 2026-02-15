@@ -140,18 +140,15 @@ fun PlayerControls(
         interactionSource = interactionSource,
     )
 
-    // --- SPEED HOLD OVERLAY START ---
+    // --- SPEED HOLD OVERLAY ---
     if (viewModel.isHoldingSpeed) {
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.TopCenter
         ) {
             SpeedHoldOverlay(
-                // CHANGED: Use isSpeedListVisible instead of isSpeedDragMode
-                // If false: Small Pill (e.g. "2.0x")
-                // If true: Long List Pill (e.g. "1.0x  1.5x  2.0x")
+                // Use isSpeedListVisible logic
                 isDragMode = viewModel.isSpeedListVisible,
-
                 currentSpeed = viewModel.currentHoldSpeed,
                 availableSpeeds = viewModel.availableHoldSpeeds,
                 selectedIndex = viewModel.highlightedSpeedIndex,

@@ -7,35 +7,30 @@ import tachiyomi.core.common.preference.getEnum
 class GesturePreferences(
     private val preferenceStore: PreferenceStore,
 ) {
-    // Sliders
-    fun gestureVolumeBrightness() = preferenceStore.getBoolean(
-        "pref_gesture_volume_brightness",
-        true,
-    )
+    fun gestureVolumeBrightness() = preferenceStore.getBoolean("pref_gesture_volume_brightness", true)
     fun swapVolumeBrightness() = preferenceStore.getBoolean("pref_swap_volume_and_brightness", false)
-
-    // Seeking
-
     fun gestureHorizontalSeek() = preferenceStore.getBoolean("pref_gesture_horizontal_seek", true)
     fun showSeekBar() = preferenceStore.getBoolean("pref_show_seekbar", false)
     fun defaultIntroLength() = preferenceStore.getInt("pref_default_intro_length", 85)
     fun skipLengthPreference() = preferenceStore.getInt("pref_skip_length_preference", 10)
     fun playerSmoothSeek() = preferenceStore.getBoolean("pref_player_smooth_seek", false)
 
-    // Double tap
-
     fun leftDoubleTapGesture() = preferenceStore.getEnum("pref_left_double_tap", SingleActionGesture.Seek)
     fun centerDoubleTapGesture() = preferenceStore.getEnum("pref_center_double_tap", SingleActionGesture.PlayPause)
     fun rightDoubleTapGesture() = preferenceStore.getEnum("pref_right_double_tap", SingleActionGesture.Seek)
 
-    // Media controls
-
     fun mediaPreviousGesture() = preferenceStore.getEnum("pref_media_previous", SingleActionGesture.Switch)
     fun mediaPlayPauseGesture() = preferenceStore.getEnum("pref_media_playpause", SingleActionGesture.PlayPause)
     fun mediaNextGesture() = preferenceStore.getEnum("pref_media_next", SingleActionGesture.Switch)
-    // Changed to 2.0f default. This stores the single speed used when you just HOLD.
-    fun defaultHoldSpeed() = preferenceStore.getFloat("pref_default_hold_speed", 2.0f)
 
-    // New: Stores the comma-separated list for the DRAG menu (e.g. "1.0, 2.0, 3.0")
+    // --- NEW PREFERENCES ---
+
+    // Changed to String to allow custom inputs like "2.35"
+    // Using "_v2" key to avoid conflict with the old Float preference
+    fun defaultHoldSpeed() = preferenceStore.getString("pref_default_hold_speed_v2", "2.0")
+
+    // The list for the Drag menu
     fun customHoldSpeeds() = preferenceStore.getString("pref_custom_hold_speeds", "0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0")
+
+    fun allowGestures() = preferenceStore.getBoolean("pref_allow_gestures_in_panels", false)
 }
