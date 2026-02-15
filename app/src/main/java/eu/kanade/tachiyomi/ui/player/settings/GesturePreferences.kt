@@ -7,6 +7,7 @@ import tachiyomi.core.common.preference.getEnum
 class GesturePreferences(
     private val preferenceStore: PreferenceStore,
 ) {
+    // ... existing preferences ...
     fun gestureVolumeBrightness() = preferenceStore.getBoolean("pref_gesture_volume_brightness", true)
     fun swapVolumeBrightness() = preferenceStore.getBoolean("pref_swap_volume_and_brightness", false)
     fun gestureHorizontalSeek() = preferenceStore.getBoolean("pref_gesture_horizontal_seek", true)
@@ -23,14 +24,8 @@ class GesturePreferences(
     fun mediaPlayPauseGesture() = preferenceStore.getEnum("pref_media_playpause", SingleActionGesture.PlayPause)
     fun mediaNextGesture() = preferenceStore.getEnum("pref_media_next", SingleActionGesture.Switch)
 
-    // --- NEW PREFERENCES ---
-
-    // Changed to String to allow custom inputs like "2.35"
-    // Using "_v2" key to avoid conflict with the old Float preference
+    // --- FIX: USE STRING FOR CUSTOM INPUT ---
     fun defaultHoldSpeed() = preferenceStore.getString("pref_default_hold_speed_v2", "2.0")
-
-    // The list for the Drag menu
     fun customHoldSpeeds() = preferenceStore.getString("pref_custom_hold_speeds", "0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0")
-
     fun allowGestures() = preferenceStore.getBoolean("pref_allow_gestures_in_panels", false)
 }

@@ -27,10 +27,10 @@ android {
 
     defaultConfig {
 
-        applicationId = "com.dark.animetailv2"
+        applicationId = "com.harry.aniyomi-plus"
 
-        versionCode = 131
-        versionName = "0.18.1.5"
+        versionCode = 1
+        versionName = "0.1.stabe"
 
         buildConfigField("String", "COMMIT_COUNT", "\"${getCommitCount()}\"")
         buildConfigField("String", "COMMIT_SHA", "\"${getGitSha()}\"")

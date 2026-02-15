@@ -60,7 +60,7 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import kotlin.math.abs
 
-// Helper for Preference
+// Helper to fix "collectAsState" errors on Preferences
 @Composable
 fun <T> Preference<T>.collectAsState(): State<T> {
     val flow = remember(this) { this.changes() }
@@ -118,7 +118,7 @@ fun GestureHandler(
         modifier = modifier
             .fillMaxSize()
             .windowInsetsPadding(WindowInsets.safeGestures)
-            // 1. Vertical Drag
+            // 1. Vertical Drag (Volume/Brightness)
             .pointerInput(areControlsLocked, gestureVolumeBrightness, swapVolumeBrightness) {
                 if (!gestureVolumeBrightness || areControlsLocked) return@pointerInput
 
@@ -201,7 +201,7 @@ fun GestureHandler(
                     }
                 }
             }
-            // 2. Custom Detector: Long Press + Drag
+            // 2. Custom Detector: Long Press + Drag (Robust with Try-Finally)
             .pointerInput(areControlsLocked, seekGesture) {
                 if (areControlsLocked) return@pointerInput
 
@@ -216,70 +216,73 @@ fun GestureHandler(
                         val press = PressInteraction.Press(down.position)
                         launch { interactionSource.emit(press) }
 
-                        while (true) {
-                            val event = awaitPointerEvent()
-                            val change = event.changes.firstOrNull() ?: break
+                        try {
+                            while (true) {
+                                val event = awaitPointerEvent()
+                                val change = event.changes.firstOrNull() ?: break
 
-                            // FIX: Replaced changedToUp() with !pressed
-                            if (!change.pressed) break
+                                // FIX: Use !pressed to detect lift
+                                if (!change.pressed) break
 
-                            val timeElapsed = System.currentTimeMillis() - downTime
-                            val dx = change.position.x - change.previousPosition.x
-                            totalDragDistanceX += dx
+                                val timeElapsed = System.currentTimeMillis() - downTime
+                                val dx = change.position.x - change.previousPosition.x
+                                totalDragDistanceX += dx
 
-                            // A. Detect Long Press
-                            if (!isLongPress && !isHorizontalDrag && timeElapsed > viewConfiguration.longPressTimeoutMillis) {
-                                isLongPress = true
-                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                // A. Detect Long Press
+                                if (!isLongPress && !isHorizontalDrag && timeElapsed > viewConfiguration.longPressTimeoutMillis) {
+                                    isLongPress = true
+                                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
 
-                                if (viewModel.paused.value) {
-                                    viewModel.sheetShown.update { Sheets.Screenshot }
-                                } else {
-                                    viewModel.onHoldSpeedStart()
-                                }
-                            }
-
-                            // B. Detect Seek Drag
-                            if (!isLongPress && !isHorizontalDrag && abs(totalDragDistanceX) > viewConfiguration.touchSlop) {
-                                val dyTotal = abs(change.position.y - down.position.y)
-                                if (abs(totalDragDistanceX) > dyTotal) {
-                                    if (seekGesture) {
-                                        isHorizontalDrag = true
-                                        viewModel.pause()
+                                    if (viewModel.paused.value) {
+                                        viewModel.sheetShown.update { Sheets.Screenshot }
+                                    } else {
+                                        viewModel.onHoldSpeedStart()
                                     }
                                 }
-                            }
 
-                            // C. Handle Speed Drag
-                            if (isLongPress && viewModel.isHoldingSpeed) {
-                                viewModel.onHoldSpeedDrag(dx)
-                                change.consume()
-                            }
-
-                            // D. Handle Seek Drag
-                            if (isHorizontalDrag) {
-                                calculateNewHorizontalGestureValue(position.toInt(), down.position.x, change.position.x, 0.15f).let {
-                                    viewModel.gestureSeekAmount.update { _ ->
-                                        Pair(
-                                            position.toInt(),
-                                            (it - position.toInt()).coerceIn(0 - position.toInt(), (duration - position.toInt()).toInt()),
-                                        )
+                                // B. Detect Seek Drag
+                                if (!isLongPress && !isHorizontalDrag && abs(totalDragDistanceX) > viewConfiguration.touchSlop) {
+                                    val dyTotal = abs(change.position.y - down.position.y)
+                                    if (abs(totalDragDistanceX) > dyTotal) {
+                                        if (seekGesture) {
+                                            isHorizontalDrag = true
+                                            viewModel.pause()
+                                        }
                                     }
-                                    viewModel.seekTo(it.coerceIn(0, duration.toInt()), preciseSeeking)
                                 }
-                                if (showSeekbar) viewModel.showSeekBar()
-                                change.consume()
+
+                                // C. Handle Speed Drag
+                                if (isLongPress && viewModel.isHoldingSpeed) {
+                                    viewModel.onHoldSpeedDrag(dx)
+                                    change.consume()
+                                }
+
+                                // D. Handle Seek Drag
+                                if (isHorizontalDrag) {
+                                    calculateNewHorizontalGestureValue(position.toInt(), down.position.x, change.position.x, 0.15f).let {
+                                        viewModel.gestureSeekAmount.update { _ ->
+                                            Pair(
+                                                position.toInt(),
+                                                (it - position.toInt()).coerceIn(0 - position.toInt(), (duration - position.toInt()).toInt()),
+                                            )
+                                        }
+                                        viewModel.seekTo(it.coerceIn(0, duration.toInt()), preciseSeeking)
+                                    }
+                                    if (showSeekbar) viewModel.showSeekBar()
+                                    change.consume()
+                                }
                             }
-                        }
+                        } finally {
+                            // --- CLEANUP (Guaranteed to run even if gesture is cancelled) ---
+                            launch { interactionSource.emit(PressInteraction.Release(press)) }
 
-                        launch { interactionSource.emit(PressInteraction.Release(press)) }
-
-                        if (isLongPress) {
-                            if (viewModel.isHoldingSpeed) viewModel.onHoldSpeedEnd()
-                        } else if (isHorizontalDrag) {
-                            viewModel.gestureSeekAmount.update { null }
-                            viewModel.hideSeekBar()
-                            viewModel.unpause()
+                            if (isLongPress) {
+                                if (viewModel.isHoldingSpeed) viewModel.onHoldSpeedEnd()
+                            } else if (isHorizontalDrag) {
+                                viewModel.gestureSeekAmount.update { null }
+                                viewModel.hideSeekBar()
+                                viewModel.unpause()
+                            }
                         }
                     }
                 }
@@ -312,6 +315,9 @@ fun GestureHandler(
                 )
             }
     )
+
+    // Ovals for visual feedback
+    DoubleTapToSeekOvals(seekAmount, viewModel.seekText.collectAsState().value, interactionSource)
 }
 
 @Composable
