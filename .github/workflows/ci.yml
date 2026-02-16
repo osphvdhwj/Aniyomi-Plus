@@ -1,0 +1,91 @@
+name: CI
+
+permissions:
+  contents: write
+
+on:
+  push:
+    branches:
+      - 'Hold+drag-stable' # Targets your active development branch
+    tags:
+      - v*
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build app
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clone repo
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: temurin
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+
+      - name: Install Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          api-level: 34 # Updated for modern Android builds
+
+      - name: Set up gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build app
+        run: ./gradlew assembleRelease -Penable-updater
+
+      # Sign APK using the Secrets you already configured
+      - name: Sign APK
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: r0adkll/sign-android-release@v1
+        with:
+          releaseDirectory: app/build/outputs/apk/release
+          signingKeyBase64: ${{ secrets.ENCODED_KEYSTORE }}
+          alias: ${{ secrets.KEY_ALIAS }}
+          keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
+          keyPassword: ${{ secrets.KEY_PASSWORD }}
+        env:
+          BUILD_TOOLS_VERSION: '35.0.1'
+
+      - name: Clean up and Rename Artifacts
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          set -e
+          # Extract version from tag
+          VERSION_TAG=${GITHUB_REF/refs\/tags\//}
+          
+          # Focusing on arm64-v8a as requested for your Poco X5 Pro
+          mv app/build/outputs/apk/release/app-arm64-v8a-release-unsigned-signed.apk Animetail-arm64-v8a-${VERSION_TAG}.apk
+          
+          # Generate checksum
+          sha=`sha256sum Animetail-arm64-v8a-${VERSION_TAG}.apk | awk '{ print $1 }'`
+          echo "APK_ARM64_SHA=$sha" >> $GITHUB_ENV
+          echo "VERSION_TAG=$VERSION_TAG" >> $GITHUB_ENV
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.VERSION_TAG }}
+          name: Animetail ${{ env.VERSION_TAG }}
+          body: |
+            ### Build Information
+            - **Device Optimization:** arm64-v8a (Poco X5 Pro / Redwood)
+            - **SHA-256:** `${{ env.APK_ARM64_SHA }}`
+          files: |
+            Animetail-arm64-v8a-${{ env.VERSION_TAG }}.apk
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
