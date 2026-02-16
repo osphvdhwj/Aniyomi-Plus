@@ -6,9 +6,9 @@ permissions:
 on:
   push:
     branches:
-      - 'Hold+drag-stable' # Matches your active branch
+      - 'Hold+drag-stable'
     tags:
-      - v* # Triggers release when you create a version tag (e.g., v1.0)
+      - v*
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -39,9 +39,6 @@ jobs:
         with:
           api-level: 34
 
-      # --- SHA-1 EXTRACTION STEP ---
-      # This pulls your SHA-1 from your keystore and puts it in the 'Summary' 
-      # page so you don't have to search through logs.
       - name: Get SHA-1 Fingerprint
         run: |
           echo "${{ secrets.ENCODED_KEYSTORE }}" | base64 -d > release.keystore
@@ -51,14 +48,15 @@ jobs:
           echo "\`$SHA1_RESULT\`" >> $GITHUB_STEP_SUMMARY
           rm release.keystore
 
-      # --- FIXED CLIENT SECRETS STEP ---
-      # Added 'continue-on-error' and a check so it doesn't crash if the secret is empty.
+      # FIXED: Map secret to env first, then check if env is NOT empty
       - name: Write client_secrets.json
-        if: "${{ secrets.CLIENT_SECRETS_TEXT != '' }}"
+        env:
+          TEXT_DATA: ${{ secrets.CLIENT_SECRETS_TEXT }}
+        if: env.TEXT_DATA != ''
         uses: DamianReeves/write-file-action@v1.2
         with:
           path: app/src/main/assets/client_secrets.json
-          contents: ${{ secrets.CLIENT_SECRETS_TEXT }}
+          contents: ${{ env.TEXT_DATA }}
           write-mode: overwrite
 
       - name: Set up gradle
@@ -67,7 +65,6 @@ jobs:
       - name: Build app
         run: ./gradlew assembleRelease -Penable-updater
 
-      # --- SIGNING STEP ---
       - name: Sign APK
         if: startsWith(github.ref, 'refs/tags/')
         uses: r0adkll/sign-android-release@v1
@@ -80,13 +77,11 @@ jobs:
         env:
           BUILD_TOOLS_VERSION: '35.0.1'
 
-      # --- RELEASE STEP ---
       - name: Clean up and Rename Artifacts
         if: startsWith(github.ref, 'refs/tags/')
         run: |
           set -e
           VERSION_TAG=${GITHUB_REF/refs\/tags\//}
-          # Rename the specific arm64 build for your Poco X5 Pro
           mv app/build/outputs/apk/release/app-arm64-v8a-release-unsigned-signed.apk Animetail-arm64-v8a-${VERSION_TAG}.apk
           echo "APK_ARM64_SHA=$(sha256sum Animetail-arm64-v8a-${VERSION_TAG}.apk | awk '{ print $1 }')" >> $GITHUB_ENV
           echo "VERSION_TAG=$VERSION_TAG" >> $GITHUB_ENV
@@ -99,8 +94,8 @@ jobs:
           name: Animetail ${{ env.VERSION_TAG }}
           body: |
             ### Build Information
-            - **Device:** Poco X5 Pro (arm64-v8a)
+            - **Variant:** arm64-v8a (Poco X5 Pro)
             - **SHA-256:** `${{ env.APK_ARM64_SHA }}`
-          files: Animetail-arm64-v8a-${{ env.VERSION_TAG }}.apk
+          files: Animetail-arm64-v8a-${{ env.VERSION_TAG.apk }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
