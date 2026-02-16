@@ -39,18 +39,18 @@ jobs:
         with:
           api-level: 34
 
-      # --- THIS IS THE KEY PART FOR YOUR SHA-1 ---
+      # --- SHA-1 EXTRACTION ---
+      # This creates the summary you need for Google Console
       - name: Get SHA-1 Fingerprint
         run: |
           echo "${{ secrets.ENCODED_KEYSTORE }}" | base64 -d > release.keystore
-          # Extract SHA1 and save to the Summary page
           SHA1_LINE=$(keytool -list -v -keystore release.keystore -alias "${{ secrets.KEY_ALIAS }}" -storepass "${{ secrets.KEYSTORE_PASSWORD }}" -keypass "${{ secrets.KEY_PASSWORD }}" | grep SHA1)
           echo "### 🔑 Build Signature (SHA-1)" >> $GITHUB_STEP_SUMMARY
           echo "Copy this to your Google Cloud Console:" >> $GITHUB_STEP_SUMMARY
           echo "\`$SHA1_LINE\`" >> $GITHUB_STEP_SUMMARY
           rm release.keystore
 
-      # --- FIXED: Checking secrets using 'env' context to avoid crash ---
+      # --- FIXED CLIENT SECRETS STEP ---
       - name: Write client_secrets.json
         env:
           CS_TEXT: ${{ secrets.CLIENT_SECRETS_TEXT }}
@@ -96,7 +96,7 @@ jobs:
           name: Animetail ${{ env.VERSION_TAG }}
           body: |
             ### Build Information
-            - **Device:** Poco X5 Pro (arm64-v8a)
+            - **Variant:** arm64-v8a (Poco X5 Pro)
             - **SHA-256:** `${{ env.APK_ARM64_SHA }}`
           files: Animetail-arm64-v8a-${{ env.VERSION_TAG }}.apk
         env:
