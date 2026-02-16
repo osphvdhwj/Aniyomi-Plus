@@ -1,18 +1,15 @@
 name: CI
 
 permissions:
-  contents: read
+  contents: write
 
 on:
-  push:
-    branches:
-      - master
-      - Hold+drag-stable
-    paths-ignore:
-      - '**.md'
-  pull_request:
-    paths-ignore:
-      - '**.md'
+  push: # Triggers on every push to any branch
+  pull_request: # Triggers on every pull request
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -34,15 +31,15 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v3
 
-      # --- NEW STEP TO FIX BUILD ---
+      # This creates the local.properties file required by your build Src logic
       - name: Create local.properties
         run: |
           echo "anilist.id=${{ secrets.ANILIST_ID }}" >> local.properties
           echo "anilist.secret=${{ secrets.ANILIST_SECRET }}" >> local.properties
           echo "mal.id=${{ secrets.MAL_ID }}" >> local.properties
           echo "mal.secret=${{ secrets.MAL_SECRET }}" >> local.properties
-          # Add dummy values if secrets are not set yet to prevent build failure
-          sed -i 's/=${{ secrets.* }}/=dummy_value/g' local.properties 
+          # Replaces empty secret references with dummy values so build doesn't crash
+          sed -i 's/=${{ secrets.* }}/=dummy_value/g' local.properties
 
       - name: Build app
         run: ./gradlew assembleDebug
