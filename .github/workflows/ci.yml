@@ -39,24 +39,26 @@ jobs:
         with:
           api-level: 34
 
+      # --- THIS IS THE KEY PART FOR YOUR SHA-1 ---
       - name: Get SHA-1 Fingerprint
         run: |
           echo "${{ secrets.ENCODED_KEYSTORE }}" | base64 -d > release.keystore
-          SHA1_RESULT=$(keytool -list -v -keystore release.keystore -alias "${{ secrets.KEY_ALIAS }}" -storepass "${{ secrets.KEYSTORE_PASSWORD }}" -keypass "${{ secrets.KEY_PASSWORD }}" | grep SHA1 | awk '{print $2}')
+          # Extract SHA1 and save to the Summary page
+          SHA1_LINE=$(keytool -list -v -keystore release.keystore -alias "${{ secrets.KEY_ALIAS }}" -storepass "${{ secrets.KEYSTORE_PASSWORD }}" -keypass "${{ secrets.KEY_PASSWORD }}" | grep SHA1)
           echo "### 🔑 Build Signature (SHA-1)" >> $GITHUB_STEP_SUMMARY
           echo "Copy this to your Google Cloud Console:" >> $GITHUB_STEP_SUMMARY
-          echo "\`$SHA1_RESULT\`" >> $GITHUB_STEP_SUMMARY
+          echo "\`$SHA1_LINE\`" >> $GITHUB_STEP_SUMMARY
           rm release.keystore
 
-      # FIXED: Map secret to env first, then check if env is NOT empty
+      # --- FIXED: Checking secrets using 'env' context to avoid crash ---
       - name: Write client_secrets.json
         env:
-          TEXT_DATA: ${{ secrets.CLIENT_SECRETS_TEXT }}
-        if: env.TEXT_DATA != ''
+          CS_TEXT: ${{ secrets.CLIENT_SECRETS_TEXT }}
+        if: env.CS_TEXT != ''
         uses: DamianReeves/write-file-action@v1.2
         with:
           path: app/src/main/assets/client_secrets.json
-          contents: ${{ env.TEXT_DATA }}
+          contents: ${{ secrets.CLIENT_SECRETS_TEXT }}
           write-mode: overwrite
 
       - name: Set up gradle
@@ -94,8 +96,8 @@ jobs:
           name: Animetail ${{ env.VERSION_TAG }}
           body: |
             ### Build Information
-            - **Variant:** arm64-v8a (Poco X5 Pro)
+            - **Device:** Poco X5 Pro (arm64-v8a)
             - **SHA-256:** `${{ env.APK_ARM64_SHA }}`
-          files: Animetail-arm64-v8a-${{ env.VERSION_TAG.apk }}
+          files: Animetail-arm64-v8a-${{ env.VERSION_TAG }}.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
