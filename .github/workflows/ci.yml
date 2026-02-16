@@ -1,18 +1,18 @@
 name: CI
 
 permissions:
-  contents: write
+  contents: read
 
 on:
   push:
     branches:
-      - 'Hold+drag-stable'
-    tags:
-      - v*
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+      - master
+      - Hold+drag-stable
+    paths-ignore:
+      - '**.md'
+  pull_request:
+    paths-ignore:
+      - '**.md'
 
 jobs:
   build:
@@ -20,85 +20,35 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Clone repo
+      - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Set up JDK 17
+      - name: Set up JDK
         uses: actions/setup-java@v4
         with:
-          java-version: 17
-          distribution: temurin
+          java-version: '17'
+          distribution: 'adopt'
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.24'
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v3
 
-      - name: Install Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          api-level: 34
-
-      # --- SHA-1 EXTRACTION ---
-      # This puts your signature on the GitHub "Summary" page for easy access
-      - name: Get SHA-1 Fingerprint
+      # --- NEW STEP TO FIX BUILD ---
+      - name: Create local.properties
         run: |
-          echo "${{ secrets.ENCODED_KEYSTORE }}" | base64 -d > release.keystore
-          SHA1_LINE=$(keytool -list -v -keystore release.keystore -alias "${{ secrets.KEY_ALIAS }}" -storepass "${{ secrets.KEYSTORE_PASSWORD }}" -keypass "${{ secrets.KEY_PASSWORD }}" | grep SHA1)
-          echo "### 🔑 Build Signature (SHA-1)" >> $GITHUB_STEP_SUMMARY
-          echo "Copy this to your Google Cloud Console:" >> $GITHUB_STEP_SUMMARY
-          echo "\`$SHA1_LINE\`" >> $GITHUB_STEP_SUMMARY
-          rm release.keystore
-
-      # --- WRITE CLIENT SECRETS ---
-      # This uses an 'env' variable to check the secret, fixing the previous crash
-      - name: Write client_secrets.json
-        env:
-          CS_TEXT: ${{ secrets.CLIENT_SECRETS_TEXT }}
-        if: env.CS_TEXT != ''
-        uses: DamianReeves/write-file-action@v1.2
-        with:
-          path: app/src/main/assets/client_secrets.json
-          contents: ${{ secrets.CLIENT_SECRETS_TEXT }}
-          write-mode: overwrite
-
-      - name: Set up gradle
-        uses: gradle/actions/setup-gradle@v4
+          echo "anilist.id=${{ secrets.ANILIST_ID }}" >> local.properties
+          echo "anilist.secret=${{ secrets.ANILIST_SECRET }}" >> local.properties
+          echo "mal.id=${{ secrets.MAL_ID }}" >> local.properties
+          echo "mal.secret=${{ secrets.MAL_SECRET }}" >> local.properties
+          # Add dummy values if secrets are not set yet to prevent build failure
+          sed -i 's/=${{ secrets.* }}/=dummy_value/g' local.properties 
 
       - name: Build app
-        run: ./gradlew assembleRelease -Penable-updater
+        run: ./gradlew assembleDebug
 
-      - name: Sign APK
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: r0adkll/sign-android-release@v1
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
         with:
-          releaseDirectory: app/build/outputs/apk/release
-          signingKeyBase64: ${{ secrets.ENCODED_KEYSTORE }}
-          alias: ${{ secrets.KEY_ALIAS }}
-          keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
-          keyPassword: ${{ secrets.KEY_PASSWORD }}
-        env:
-          BUILD_TOOLS_VERSION: '35.0.1'
-
-      - name: Clean up and Rename Artifacts
-        if: startsWith(github.ref, 'refs/tags/')
-        run: |
-          set -e
-          VERSION_TAG=${GITHUB_REF/refs\/tags\//}
-          mv app/build/outputs/apk/release/app-arm64-v8a-release-unsigned-signed.apk Animetail-arm64-v8a-${VERSION_TAG}.apk
-          echo "APK_ARM64_SHA=$(sha256sum Animetail-arm64-v8a-${VERSION_TAG}.apk | awk '{ print $1 }')" >> $GITHUB_ENV
-          echo "VERSION_TAG=$VERSION_TAG" >> $GITHUB_ENV
-
-      - name: Create GitHub Release
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ env.VERSION_TAG }}
-          name: Animetail ${{ env.VERSION_TAG }}
-          body: |
-            ### Build Information
-            - **Variant:** arm64-v8a (Poco X5 Pro)
-            - **SHA-256:** `${{ env.APK_ARM64_SHA }}`
-          files: Animetail-arm64-v8a-${{ env.VERSION_TAG }}.apk
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: animetail-debug
+          path: app/build/outputs/apk/debug/*.apk
