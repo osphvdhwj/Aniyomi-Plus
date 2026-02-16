@@ -40,7 +40,7 @@ jobs:
           api-level: 34
 
       # --- SHA-1 EXTRACTION ---
-      # This creates the summary you need for Google Console
+      # This puts your signature on the GitHub "Summary" page for easy access
       - name: Get SHA-1 Fingerprint
         run: |
           echo "${{ secrets.ENCODED_KEYSTORE }}" | base64 -d > release.keystore
@@ -50,7 +50,8 @@ jobs:
           echo "\`$SHA1_LINE\`" >> $GITHUB_STEP_SUMMARY
           rm release.keystore
 
-      # --- FIXED CLIENT SECRETS STEP ---
+      # --- WRITE CLIENT SECRETS ---
+      # This uses an 'env' variable to check the secret, fixing the previous crash
       - name: Write client_secrets.json
         env:
           CS_TEXT: ${{ secrets.CLIENT_SECRETS_TEXT }}
