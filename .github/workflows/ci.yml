@@ -6,9 +6,9 @@ permissions:
 on:
   push:
     branches:
-      - 'Hold+drag-stable' # Targets your active development branch
+      - 'Hold+drag-stable' # Matches your active branch
     tags:
-      - v*
+      - v* # Triggers release when you create a version tag (e.g., v1.0)
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -20,13 +20,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    
       - name: Clone repo
         uses: actions/checkout@v4
-      - name: Get SHA-1 Fingerprint
-        run: |
-           echo "${{ secrets.ENCODED_KEYSTORE }}" | base64 -d > release.keystore
-           keytool -list -v -keystore release.keystore -alias "${{ secrets.KEY_ALIAS }}" -storepass "${{ secrets.KEYSTORE_PASSWORD }}" -keypass "${{ secrets.KEY_PASSWORD }}" | grep SHA1
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -41,7 +37,29 @@ jobs:
       - name: Install Android SDK
         uses: android-actions/setup-android@v3
         with:
-          api-level: 34 # Updated for modern Android builds
+          api-level: 34
+
+      # --- SHA-1 EXTRACTION STEP ---
+      # This pulls your SHA-1 from your keystore and puts it in the 'Summary' 
+      # page so you don't have to search through logs.
+      - name: Get SHA-1 Fingerprint
+        run: |
+          echo "${{ secrets.ENCODED_KEYSTORE }}" | base64 -d > release.keystore
+          SHA1_RESULT=$(keytool -list -v -keystore release.keystore -alias "${{ secrets.KEY_ALIAS }}" -storepass "${{ secrets.KEYSTORE_PASSWORD }}" -keypass "${{ secrets.KEY_PASSWORD }}" | grep SHA1 | awk '{print $2}')
+          echo "### 🔑 Build Signature (SHA-1)" >> $GITHUB_STEP_SUMMARY
+          echo "Copy this to your Google Cloud Console:" >> $GITHUB_STEP_SUMMARY
+          echo "\`$SHA1_RESULT\`" >> $GITHUB_STEP_SUMMARY
+          rm release.keystore
+
+      # --- FIXED CLIENT SECRETS STEP ---
+      # Added 'continue-on-error' and a check so it doesn't crash if the secret is empty.
+      - name: Write client_secrets.json
+        if: "${{ secrets.CLIENT_SECRETS_TEXT != '' }}"
+        uses: DamianReeves/write-file-action@v1.2
+        with:
+          path: app/src/main/assets/client_secrets.json
+          contents: ${{ secrets.CLIENT_SECRETS_TEXT }}
+          write-mode: overwrite
 
       - name: Set up gradle
         uses: gradle/actions/setup-gradle@v4
@@ -49,7 +67,7 @@ jobs:
       - name: Build app
         run: ./gradlew assembleRelease -Penable-updater
 
-      # Sign APK using the Secrets you already configured
+      # --- SIGNING STEP ---
       - name: Sign APK
         if: startsWith(github.ref, 'refs/tags/')
         uses: r0adkll/sign-android-release@v1
@@ -62,19 +80,15 @@ jobs:
         env:
           BUILD_TOOLS_VERSION: '35.0.1'
 
+      # --- RELEASE STEP ---
       - name: Clean up and Rename Artifacts
         if: startsWith(github.ref, 'refs/tags/')
         run: |
           set -e
-          # Extract version from tag
           VERSION_TAG=${GITHUB_REF/refs\/tags\//}
-          
-          # Focusing on arm64-v8a as requested for your Poco X5 Pro
+          # Rename the specific arm64 build for your Poco X5 Pro
           mv app/build/outputs/apk/release/app-arm64-v8a-release-unsigned-signed.apk Animetail-arm64-v8a-${VERSION_TAG}.apk
-          
-          # Generate checksum
-          sha=`sha256sum Animetail-arm64-v8a-${VERSION_TAG}.apk | awk '{ print $1 }'`
-          echo "APK_ARM64_SHA=$sha" >> $GITHUB_ENV
+          echo "APK_ARM64_SHA=$(sha256sum Animetail-arm64-v8a-${VERSION_TAG}.apk | awk '{ print $1 }')" >> $GITHUB_ENV
           echo "VERSION_TAG=$VERSION_TAG" >> $GITHUB_ENV
 
       - name: Create GitHub Release
@@ -85,11 +99,8 @@ jobs:
           name: Animetail ${{ env.VERSION_TAG }}
           body: |
             ### Build Information
-            - **Device Optimization:** arm64-v8a (Poco X5 Pro / Redwood)
+            - **Device:** Poco X5 Pro (arm64-v8a)
             - **SHA-256:** `${{ env.APK_ARM64_SHA }}`
-          files: |
-            Animetail-arm64-v8a-${{ env.VERSION_TAG }}.apk
-          draft: false
-          prerelease: false
+          files: Animetail-arm64-v8a-${{ env.VERSION_TAG }}.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
