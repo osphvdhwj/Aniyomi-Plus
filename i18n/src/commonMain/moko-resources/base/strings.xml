@@ -42,6 +42,7 @@
 
     <!-- Shared labels -->
     <string name="label_started">Started</string>
+    <string name="not_started">Not started</string>
     <string name="label_local">Local</string>
     <string name="label_downloaded">Downloaded</string>
 

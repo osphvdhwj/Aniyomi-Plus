@@ -17,6 +17,8 @@ enum class LibraryQuickFilter {
     All,
     Ongoing,
     Completed,
+    Started,
+    NotStarted,
 }
 
 @Composable
@@ -41,6 +43,8 @@ fun LibraryQuickFilterBar(
                             LibraryQuickFilter.All -> stringResource(MR.strings.all)
                             LibraryQuickFilter.Ongoing -> stringResource(MR.strings.ongoing)
                             LibraryQuickFilter.Completed -> stringResource(MR.strings.completed)
+                            LibraryQuickFilter.Started -> stringResource(MR.strings.label_started)
+                            LibraryQuickFilter.NotStarted -> stringResource(MR.strings.not_started)
                         },
                         style = MaterialTheme.typography.labelMedium,
                     )
