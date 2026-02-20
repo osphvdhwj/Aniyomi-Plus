@@ -18,6 +18,7 @@
     <string name="track">Tracking</string>
     <string name="delete_downloaded">Delete downloaded</string>
     <string name="history">History</string>
+    <string name="custom_entry_metadata">Custom metadata (title, tags, description)</string>
     <string name="scanlator">Scanlator</string>
 
     <!-- Screen titles -->

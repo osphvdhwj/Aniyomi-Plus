@@ -27,7 +27,7 @@ class AnimeBackupCreator(
 
     private suspend fun backupAnime(anime: Anime, options: BackupOptions): BackupAnime {
         // Entry for this anime
-        val animeObject = anime.toBackupAnime()
+        val animeObject = anime.toBackupAnime(options.customInfo)
 
         if (options.chapters) {
             // Backup all the episodes
@@ -73,7 +73,7 @@ class AnimeBackupCreator(
     }
 }
 
-private fun Anime.toBackupAnime() =
+private fun Anime.toBackupAnime(includeCustomInfo: Boolean) =
     BackupAnime(
         url = this.url,
         title = this.title,
@@ -98,4 +98,10 @@ private fun Anime.toBackupAnime() =
         seasonFlags = this.seasonFlags,
         seasonNumber = this.seasonNumber,
         seasonSourceOrder = this.seasonSourceOrder,
+        customTitle = if (includeCustomInfo && this.title != this.ogTitle) this.title else null,
+        customArtist = if (includeCustomInfo && this.artist != this.ogArtist) this.artist else null,
+        customAuthor = if (includeCustomInfo && this.author != this.ogAuthor) this.author else null,
+        customDescription = if (includeCustomInfo && this.description != this.ogDescription) this.description else null,
+        customGenre = if (includeCustomInfo && this.genre != this.ogGenre) this.genre else null,
+        customStatus = if (includeCustomInfo && this.status != this.ogStatus) this.status.toInt() else 0,
     )

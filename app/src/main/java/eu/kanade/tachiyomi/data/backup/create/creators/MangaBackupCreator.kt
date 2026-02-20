@@ -28,7 +28,7 @@ class MangaBackupCreator(
 
     private suspend fun backupManga(manga: Manga, options: BackupOptions): BackupManga {
         // Entry for this manga
-        val mangaObject = manga.toBackupManga()
+        val mangaObject = manga.toBackupManga(options.customInfo)
 
         mangaObject.excludedScanlators = handler.awaitList {
             excluded_scanlatorsQueries.getExcludedScanlatorsByMangaId(manga.id)
@@ -79,7 +79,7 @@ class MangaBackupCreator(
     }
 }
 
-private fun Manga.toBackupManga() =
+private fun Manga.toBackupManga(includeCustomInfo: Boolean) =
     BackupManga(
         url = this.url,
         title = this.title,
@@ -99,4 +99,10 @@ private fun Manga.toBackupManga() =
         lastModifiedAt = this.lastModifiedAt,
         favoriteModifiedAt = this.favoriteModifiedAt,
         version = this.version,
+        customTitle = if (includeCustomInfo && this.title != this.ogTitle) this.title else null,
+        customArtist = if (includeCustomInfo && this.artist != this.ogArtist) this.artist else null,
+        customAuthor = if (includeCustomInfo && this.author != this.ogAuthor) this.author else null,
+        customDescription = if (includeCustomInfo && this.description != this.ogDescription) this.description else null,
+        customGenre = if (includeCustomInfo && this.genre != this.ogGenre) this.genre else null,
+        customStatus = if (includeCustomInfo && this.status != this.ogStatus) this.status.toInt() else 0,
     )

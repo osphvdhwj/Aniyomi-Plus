@@ -11,6 +11,7 @@ data class BackupOptions(
     val chapters: Boolean = true,
     val tracking: Boolean = true,
     val history: Boolean = true,
+    val customInfo: Boolean = true,
     val readEntries: Boolean = true,
     val appSettings: Boolean = true,
     val extensionRepoSettings: Boolean = true,
@@ -26,6 +27,7 @@ data class BackupOptions(
         chapters,
         tracking,
         history,
+        customInfo,
         readEntries,
         appSettings,
         extensionRepoSettings,
@@ -73,6 +75,12 @@ data class BackupOptions(
                 setter = { options, enabled -> options.copy(categories = enabled) },
             ),
             Entry(
+                label = MR.strings.custom_entry_metadata,
+                getter = BackupOptions::customInfo,
+                setter = { options, enabled -> options.copy(customInfo = enabled) },
+                enabled = { it.libraryEntries },
+            ),
+            Entry(
                 label = AYMR.strings.non_library_settings,
                 getter = BackupOptions::readEntries,
                 setter = { options, enabled -> options.copy(readEntries = enabled) },
@@ -118,18 +126,19 @@ data class BackupOptions(
         )
 
         fun fromBooleanArray(array: BooleanArray) = BackupOptions(
-            libraryEntries = array[0],
-            categories = array[1],
-            chapters = array[2],
-            tracking = array[3],
-            history = array[4],
-            readEntries = array[5],
-            appSettings = array[6],
-            extensionRepoSettings = array[7],
-            customButton = array[8],
-            sourceSettings = array[9],
-            privateSettings = array[10],
-            extensions = array[11],
+            libraryEntries = array.getOrElse(0) { true },
+            categories = array.getOrElse(1) { true },
+            chapters = array.getOrElse(2) { true },
+            tracking = array.getOrElse(3) { true },
+            history = array.getOrElse(4) { true },
+            customInfo = array.getOrElse(5) { true },
+            readEntries = array.getOrElse(6) { true },
+            appSettings = array.getOrElse(7) { true },
+            extensionRepoSettings = array.getOrElse(8) { true },
+            customButton = array.getOrElse(9) { true },
+            sourceSettings = array.getOrElse(10) { true },
+            privateSettings = array.getOrElse(11) { false },
+            extensions = array.getOrElse(12) { false },
         )
     }
 
