@@ -182,4 +182,6 @@ private fun List<MangaLibraryItem>.filterByQuickFilter(filter: LibraryQuickFilte
         LibraryQuickFilter.Completed -> filter { it.libraryManga.totalChapters > 0 && it.libraryManga.unreadCount == 0L }
         LibraryQuickFilter.Started -> filter { it.libraryManga.hasStarted }
         LibraryQuickFilter.NotStarted -> filter { !it.libraryManga.hasStarted }
+        LibraryQuickFilter.Unread -> filter { it.libraryManga.unreadCount > 0 }
+        LibraryQuickFilter.Downloaded -> filter { it.downloadCount > 0 }
     }

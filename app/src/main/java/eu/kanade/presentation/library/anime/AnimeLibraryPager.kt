@@ -184,4 +184,6 @@ private fun List<AnimeLibraryItem>.filterByQuickFilter(filter: LibraryQuickFilte
         LibraryQuickFilter.Completed -> filter { it.libraryAnime.totalCount > 0 && it.libraryAnime.unseenCount == 0L }
         LibraryQuickFilter.Started -> filter { it.libraryAnime.hasStarted }
         LibraryQuickFilter.NotStarted -> filter { !it.libraryAnime.hasStarted }
+        LibraryQuickFilter.Unread -> filter { it.libraryAnime.unseenCount > 0 }
+        LibraryQuickFilter.Downloaded -> filter { it.downloadCount > 0 }
     }
