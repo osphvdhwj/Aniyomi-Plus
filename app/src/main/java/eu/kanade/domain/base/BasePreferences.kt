@@ -32,6 +32,7 @@ class BasePreferences(
         LEGACY(MR.strings.ext_installer_legacy, true),
         PACKAGEINSTALLER(MR.strings.ext_installer_packageinstaller, true),
         SHIZUKU(MR.strings.ext_installer_shizuku, false),
+        ROOT(MR.strings.ext_installer_root, false),
         PRIVATE(MR.strings.ext_installer_private, false),
     }
 

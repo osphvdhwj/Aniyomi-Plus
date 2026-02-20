@@ -79,6 +79,10 @@ class PlayerPreferences(
         "default_speed_presets",
         setOf("0.25", "0.5", "0.75", "1.0", "1.25", "1.5", "1.75", "2.0", "2.5", "3.0", "3.5", "4.0"),
     )
+    fun recentSpeedList() = preferenceStore.getString(
+        "pref_player_recent_speed_list",
+        "1.0,0.75,1.25,1.5,0.5,2.0",
+    )
     fun invertDuration() = preferenceStore.getBoolean("invert_duration", false)
     fun aspectState() = preferenceStore.getEnum("pref_player_aspect_state", VideoAspect.Fit)
 

@@ -3,6 +3,7 @@ package eu.kanade.domain.base
 import android.content.Context
 import eu.kanade.domain.base.BasePreferences.ExtensionInstaller
 import eu.kanade.tachiyomi.util.system.hasMiuiPackageInstaller
+import eu.kanade.tachiyomi.util.system.isRootAvailable
 import eu.kanade.tachiyomi.util.system.isShizukuInstalled
 import kotlinx.coroutines.CoroutineScope
 import tachiyomi.core.common.preference.Preference
@@ -39,6 +40,9 @@ class ExtensionInstallerPreference(
             }
             ExtensionInstaller.SHIZUKU -> {
                 if (!context.isShizukuInstalled) return defaultValue()
+            }
+            ExtensionInstaller.ROOT -> {
+                if (!context.isRootAvailable) return defaultValue()
             }
             else -> {}
         }

@@ -63,6 +63,7 @@ import eu.kanade.tachiyomi.ui.more.OnboardingScreen
 import eu.kanade.tachiyomi.util.CrashLogUtil
 import eu.kanade.tachiyomi.util.system.GLUtil
 import eu.kanade.tachiyomi.util.system.isReleaseBuildType
+import eu.kanade.tachiyomi.util.system.isRootAvailable
 import eu.kanade.tachiyomi.util.system.isShizukuInstalled
 import eu.kanade.tachiyomi.util.system.powerManager
 import eu.kanade.tachiyomi.util.system.setDefaultSettings
@@ -503,6 +504,7 @@ object SettingsAdvancedScreen : SearchableSettings {
         val uriHandler = LocalUriHandler.current
         val extensionInstallerPref = basePreferences.extensionInstaller()
         var shizukuMissing by rememberSaveable { mutableStateOf(false) }
+        var rootMissing by rememberSaveable { mutableStateOf(false) }
         val trustAnimeExtension = remember { Injekt.get<TrustAnimeExtension>() }
         val trustMangaExtension = remember { Injekt.get<TrustMangaExtension>() }
 
@@ -533,6 +535,23 @@ object SettingsAdvancedScreen : SearchableSettings {
                 },
             )
         }
+        if (rootMissing) {
+            val dismiss = { rootMissing = false }
+            AlertDialog(
+                onDismissRequest = dismiss,
+                title = { Text(text = stringResource(MR.strings.ext_installer_root)) },
+                text = {
+                    Text(
+                        text = stringResource(MR.strings.ext_installer_root_unavailable_dialog),
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = dismiss) {
+                        Text(text = stringResource(MR.strings.action_ok))
+                    }
+                },
+            )
+        }
         return Preference.PreferenceGroup(
             title = stringResource(MR.strings.label_extensions),
             preferenceItems = persistentListOf(
@@ -551,13 +570,16 @@ object SettingsAdvancedScreen : SearchableSettings {
                         .toImmutableMap(),
                     title = stringResource(MR.strings.ext_installer_pref),
                     onValueChanged = {
-                        if (it == BasePreferences.ExtensionInstaller.SHIZUKU &&
-                            !context.isShizukuInstalled
-                        ) {
-                            shizukuMissing = true
-                            false
-                        } else {
-                            true
+                        when {
+                            it == BasePreferences.ExtensionInstaller.SHIZUKU && !context.isShizukuInstalled -> {
+                                shizukuMissing = true
+                                false
+                            }
+                            it == BasePreferences.ExtensionInstaller.ROOT && !context.isRootAvailable -> {
+                                rootMissing = true
+                                false
+                            }
+                            else -> true
                         }
                     },
                 ),
