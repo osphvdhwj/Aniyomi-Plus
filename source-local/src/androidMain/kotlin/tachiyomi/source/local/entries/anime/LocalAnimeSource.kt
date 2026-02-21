@@ -357,8 +357,19 @@ actual class LocalAnimeSource(
     // Filters
     override fun getFilterList() = AnimeFilterList(AnimeOrderBy.Popular(context))
 
-    // Unused stuff
-    override suspend fun getVideoList(episode: SEpisode): List<Video> = throw UnsupportedOperationException("Unused")
+    override suspend fun getVideoList(episode: SEpisode): List<Video> = withIOContext {
+        val (animeDirName, episodeName) = episode.url.split('/', limit = 2)
+        val videoFile = fileSystem.getAnimeDirectory(animeDirName)
+            ?.findFile(episodeName)
+            ?: throw Exception(context.stringResource(AYMR.strings.episode_not_found))
+
+        listOf(
+            Video(
+                videoUrl = videoFile.uri.toString(),
+                videoTitle = "Local source: ${episode.url}",
+            ),
+        )
+    }
 
     private fun updateImageFromVideo(
         episode: SEpisode,

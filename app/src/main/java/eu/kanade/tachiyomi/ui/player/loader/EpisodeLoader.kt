@@ -13,7 +13,6 @@ import kotlinx.coroutines.CancellationException
 import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.domain.items.episode.model.Episode
 import tachiyomi.source.local.entries.anime.LocalAnimeSource
-import tachiyomi.source.local.io.anime.LocalAnimeSourceFileSystem
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
@@ -35,7 +34,7 @@ class EpisodeLoader {
             return when {
                 isDownloaded -> getHostersOnDownloaded(episode, anime, source)
                 source is AnimeHttpSource -> getHostersOnHttp(episode, source)
-                source is LocalAnimeSource -> getHostersOnLocal(episode)
+                source is LocalAnimeSource -> getHostersOnLocal(episode, source)
                 else -> error("source not supported")
             }
         }
@@ -121,22 +120,12 @@ class EpisodeLoader {
          *
          * @param episode the episode being parsed.
          */
-        private fun getHostersOnLocal(
+        private suspend fun getHostersOnLocal(
             episode: Episode,
+            source: LocalAnimeSource,
         ): List<Hoster> {
             return try {
-                val (animeDirName, episodeName) = episode.url.split('/', limit = 2)
-                val fileSystem: LocalAnimeSourceFileSystem = Injekt.get()
-                val videoFile = fileSystem.getBaseDirectory()
-                    ?.findFile(animeDirName)
-                    ?.findFile(episodeName)
-                val videoUri = videoFile!!.uri
-
-                val video = Video(
-                    videoUri.toString(),
-                    "Local source: ${episode.url}",
-                )
-                listOf(video).toHosterList()
+                source.getVideoList(episode.toSEpisode()).toHosterList()
             } catch (e: Exception) {
                 emptyList()
             }
