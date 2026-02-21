@@ -44,7 +44,10 @@ class GoogleDriveLoginActivity : BaseOAuthLoginActivity() {
             } else {
                 Toast.makeText(
                     this,
-                    stringResource(TLMR.strings.google_drive_login_failed, "Invalid state"),
+                    stringResource(
+                        TLMR.strings.google_drive_login_failed,
+                        stringResource(TLMR.strings.google_drive_login_invalid_state),
+                    ),
                     Toast.LENGTH_LONG,
                 ).show()
                 returnToSettings()

@@ -162,6 +162,7 @@
     <string name="google_drive_sync_data_purge_error">Error purging sync data from Google Drive, Try to sign in again.</string>
     <string name="google_drive_login_success">Logged in to Google Drive</string>
     <string name="google_drive_login_failed">Failed to log in to Google Drive: %s</string>
+    <string name="google_drive_login_invalid_state">Invalid state</string>
     <string name="google_drive_not_signed_in">Not signed in to Google Drive</string>
     <string name="error_uploading_sync_data">Error uploading sync data to Google Drive</string>
     <string name="error_deleting_google_drive_lock_file">Error Deleting Google Drive Lock File</string>
