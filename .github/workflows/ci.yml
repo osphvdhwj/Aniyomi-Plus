@@ -1,0 +1,52 @@
+name: CI
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches:
+      - master
+      - Hold+drag-stable
+    paths-ignore:
+      - '**.md'
+  pull_request:
+    paths-ignore:
+      - '**.md'
+
+jobs:
+  build:
+    name: Build app
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'adopt'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      # This creates the local.properties file required by your build Src logic
+      - name: Create local.properties
+        run: |
+          echo "anilist.id=${{ secrets.ANILIST_ID || 'dummy_value' }}" >> local.properties
+          echo "anilist.secret=${{ secrets.ANILIST_SECRET || 'dummy_value' }}" >> local.properties
+          echo "mal.id=${{ secrets.MAL_ID || 'dummy_value' }}" >> local.properties
+          echo "mal.secret=${{ secrets.MAL_SECRET || 'dummy_value' }}" >> local.properties
+
+      - name: Build app
+        run: ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: animetail-debug
+          path: app/build/outputs/apk/debug/*.apk

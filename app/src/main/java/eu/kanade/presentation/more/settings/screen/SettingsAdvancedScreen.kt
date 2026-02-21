@@ -63,6 +63,7 @@ import eu.kanade.tachiyomi.ui.more.OnboardingScreen
 import eu.kanade.tachiyomi.util.CrashLogUtil
 import eu.kanade.tachiyomi.util.system.GLUtil
 import eu.kanade.tachiyomi.util.system.isReleaseBuildType
+import eu.kanade.tachiyomi.util.system.isRootAvailable
 import eu.kanade.tachiyomi.util.system.isShizukuInstalled
 import eu.kanade.tachiyomi.util.system.powerManager
 import eu.kanade.tachiyomi.util.system.setDefaultSettings
@@ -569,13 +570,16 @@ object SettingsAdvancedScreen : SearchableSettings {
                         .toImmutableMap(),
                     title = stringResource(MR.strings.ext_installer_pref),
                     onValueChanged = {
-                        if (it == BasePreferences.ExtensionInstaller.SHIZUKU &&
-                            !context.isShizukuInstalled
-                        ) {
-                            shizukuMissing = true
-                            false
-                        } else {
-                            true
+                        when {
+                            it == BasePreferences.ExtensionInstaller.SHIZUKU && !context.isShizukuInstalled -> {
+                                shizukuMissing = true
+                                false
+                            }
+                            it == BasePreferences.ExtensionInstaller.ROOT && !context.isRootAvailable -> {
+                                rootMissing = true
+                                false
+                            }
+                            else -> true
                         }
                     },
                 ),
