@@ -1,3 +1,20 @@
+/*
+ * Copyright 2024 Abdallah Mehiz
+ * https://github.com/abdallahmehiz/mpvKt
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 /**
  * Code is a mix between PlayerViewModel from mpvKt and the former
  * PlayerViewModel from Aniyomi.
@@ -411,6 +428,8 @@ class PlayerViewModel @JvmOverloads constructor(
                 val buttons = getCustomButtons.getAll()
                 buttons.firstOrNull { it.isFavorite }?.let {
                     _primaryButton.update { _ -> it }
+                    // If the button text is not empty, it has been set buy a lua script in which
+                    // case we don't want to override it
                     if (_primaryButtonTitle.value.isEmpty()) {
                         setPrimaryCustomButtonTitle(it)
                     }
