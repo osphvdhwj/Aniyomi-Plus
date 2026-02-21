@@ -25,13 +25,13 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toPersistentMap
-import tachiyomi.core.common.preference.Preference as TPreference
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.components.WheelTextPicker
 import tachiyomi.presentation.core.i18n.stringResource
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import tachiyomi.core.common.preference.Preference as TPreference
 
 object PlayerSettingsGesturesScreen : SearchableSettings {
 
@@ -58,6 +58,7 @@ object PlayerSettingsGesturesScreen : SearchableSettings {
         val flow = remember(this) { this.changes() }
         return flow.collectAsState(initial = this.get())
     }
+
 /* MY CODE */
     @Composable
     private fun getLongPressGroup(gesturePreferences: GesturePreferences): Preference.PreferenceGroup {
@@ -79,9 +80,13 @@ object PlayerSettingsGesturesScreen : SearchableSettings {
                             val floatVal = newValue.toFloat()
                             if (floatVal > 0.1f && floatVal <= 10.0f) {
                                 true
-                            } else false
-                        } catch (e: Exception) { false }
-                    }
+                            } else {
+                                false
+                            }
+                        } catch (e: Exception) {
+                            false
+                        }
+                    },
                 ),
                 // 2. Custom Drag List
                 Preference.PreferenceItem.EditTextPreference(
@@ -92,12 +97,15 @@ object PlayerSettingsGesturesScreen : SearchableSettings {
                         try {
                             val list = newValue.split(",").map { it.trim().toDouble() }
                             list.isNotEmpty()
-                        } catch (e: Exception) { false }
-                    }
+                        } catch (e: Exception) {
+                            false
+                        }
+                    },
                 ),
             ),
         )
     }
+
     /* END */
     @Composable
     private fun getSlidersGroup(gesturePreferences: GesturePreferences): Preference.PreferenceGroup {

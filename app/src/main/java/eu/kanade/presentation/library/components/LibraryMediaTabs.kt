@@ -89,7 +89,13 @@ private fun LibraryMediaTabItem(
         modifier = modifier
             .clip(RoundedCornerShape(20.dp))
             .background(
-                if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surface,
+                if (selected) {
+                    MaterialTheme.colorScheme.primary.copy(
+                        alpha = 0.2f,
+                    )
+                } else {
+                    MaterialTheme.colorScheme.surface
+                },
             )
             .clickable(onClick = onClick)
             .padding(vertical = 10.dp),

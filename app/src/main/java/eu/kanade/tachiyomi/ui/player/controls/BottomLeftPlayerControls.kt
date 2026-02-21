@@ -33,8 +33,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import kotlin.math.abs
-import kotlin.math.roundToInt
 import dev.vivvvek.seeker.Segment
 import eu.kanade.tachiyomi.ui.player.Sheets
 import eu.kanade.tachiyomi.ui.player.controls.components.ControlsButton
@@ -45,6 +43,8 @@ import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import kotlin.math.abs
+import kotlin.math.roundToInt
 
 @Composable
 fun BottomLeftPlayerControls(
@@ -121,7 +121,6 @@ fun BottomLeftPlayerControls(
         }
     }
 }
-
 
 private fun parseSpeeds(value: String): List<Float> = value
     .split(",")

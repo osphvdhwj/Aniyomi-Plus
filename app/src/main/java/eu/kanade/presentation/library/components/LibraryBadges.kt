@@ -47,7 +47,6 @@ internal fun LanguageBadge(
     }
 }
 
-
 @Composable
 internal fun GenreBadge(genre: String?) {
     val normalized = genre

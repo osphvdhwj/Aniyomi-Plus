@@ -10,8 +10,8 @@ import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.notification.Notifications
 import eu.kanade.tachiyomi.extension.anime.installer.InstallerAnime
 import eu.kanade.tachiyomi.extension.anime.installer.PackageInstallerInstallerAnime
-import eu.kanade.tachiyomi.extension.anime.installer.ShizukuInstallerAnime
 import eu.kanade.tachiyomi.extension.anime.installer.RootInstallerAnime
+import eu.kanade.tachiyomi.extension.anime.installer.ShizukuInstallerAnime
 import eu.kanade.tachiyomi.extension.anime.util.AnimeExtensionInstaller.Companion.EXTRA_DOWNLOAD_ID
 import eu.kanade.tachiyomi.util.system.getSerializableExtraCompat
 import eu.kanade.tachiyomi.util.system.notificationBuilder

@@ -51,11 +51,11 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import eu.kanade.presentation.more.settings.screen.player.custombutton.getButtons
@@ -161,7 +161,7 @@ fun PlayerControls(
     if (viewModel.isHoldingSpeed) {
         Box(
             modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.TopCenter
+            contentAlignment = Alignment.TopCenter,
         ) {
             SpeedHoldOverlay(
                 // Use isSpeedListVisible logic
@@ -169,7 +169,7 @@ fun PlayerControls(
                 currentSpeed = viewModel.currentHoldSpeed,
                 availableSpeeds = viewModel.availableHoldSpeeds,
                 selectedIndex = viewModel.highlightedSpeedIndex,
-                modifier = Modifier.padding(top = 48.dp)
+                modifier = Modifier.padding(top = 48.dp),
             )
         }
     }

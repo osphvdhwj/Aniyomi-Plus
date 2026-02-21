@@ -176,7 +176,6 @@ private fun LibraryPagerEmptyScreen(
     }
 }
 
-
 private fun List<AnimeLibraryItem>.filterByQuickFilter(filter: LibraryQuickFilter): List<AnimeLibraryItem> =
     when (filter) {
         LibraryQuickFilter.All -> this
