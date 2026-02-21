@@ -41,7 +41,6 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.ensureActive
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import logcat.LogPriority
@@ -206,7 +205,7 @@ class MangaLibraryUpdateJob(private val context: Context, workerParams: WorkerPa
             when (group) {
                 MangaLibraryGroup.BY_TRACK_STATUS -> {
                     val trackingExtra = groupExtra?.toIntOrNull() ?: -1
-                    val tracks = runBlocking { getTracks.await() }.groupBy { it.mangaId }
+                    val tracks = getTracks.await().groupBy { it.mangaId }
 
                     libraryManga.filter { (manga) ->
                         val status = tracks[manga.id]?.firstNotNullOfOrNull { track ->
