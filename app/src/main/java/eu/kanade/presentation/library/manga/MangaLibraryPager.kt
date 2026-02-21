@@ -21,6 +21,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import eu.kanade.core.preference.PreferenceMutableState
 import eu.kanade.presentation.library.components.GlobalSearchItem
+import eu.kanade.presentation.library.components.LibraryQuickFilter
 import eu.kanade.tachiyomi.ui.library.manga.MangaLibraryItem
 import tachiyomi.domain.library.manga.LibraryManga
 import tachiyomi.domain.library.model.LibraryDisplayMode
@@ -42,6 +43,7 @@ fun MangaLibraryPager(
     onClickManga: (LibraryManga) -> Unit,
     onLongClickManga: (LibraryManga) -> Unit,
     onClickContinueReading: ((LibraryManga) -> Unit)?,
+    quickFilter: LibraryQuickFilter,
 ) {
     BoxWithConstraints {
         val density = LocalDensity.current
@@ -56,7 +58,7 @@ fun MangaLibraryPager(
                 // To make sure only one offscreen page is being composed
                 return@HorizontalPager
             }
-            val library = getLibraryForPage(page)
+            val library = getLibraryForPage(page).filterByQuickFilter(quickFilter)
 
             if (library.isEmpty()) {
                 LibraryPagerEmptyScreen(
@@ -171,3 +173,15 @@ private fun LibraryPagerEmptyScreen(
         )
     }
 }
+
+
+private fun List<MangaLibraryItem>.filterByQuickFilter(filter: LibraryQuickFilter): List<MangaLibraryItem> =
+    when (filter) {
+        LibraryQuickFilter.All -> this
+        LibraryQuickFilter.Ongoing -> filter { it.libraryManga.hasStarted && it.libraryManga.unreadCount > 0 }
+        LibraryQuickFilter.Completed -> filter { it.libraryManga.totalChapters > 0 && it.libraryManga.unreadCount == 0L }
+        LibraryQuickFilter.Started -> filter { it.libraryManga.hasStarted }
+        LibraryQuickFilter.NotStarted -> filter { !it.libraryManga.hasStarted }
+        LibraryQuickFilter.Unread -> filter { it.libraryManga.unreadCount > 0 }
+        LibraryQuickFilter.Downloaded -> filter { it.downloadCount > 0 }
+    }

@@ -189,3 +189,17 @@ fun Context.launchRequestPackageInstallsPermission() {
         startActivity(this)
     }
 }
+
+private var isRootAvailableCache: Boolean? = null
+
+val Context.isRootAvailable: Boolean
+    get() {
+        if (isRootAvailableCache == null) {
+            isRootAvailableCache = try {
+                Runtime.getRuntime().exec(arrayOf("su", "-c", "id")).waitFor() == 0
+            } catch (_: Exception) {
+                false
+            }
+        }
+        return isRootAvailableCache!!
+    }

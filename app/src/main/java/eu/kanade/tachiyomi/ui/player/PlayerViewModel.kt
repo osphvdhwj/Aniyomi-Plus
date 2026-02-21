@@ -31,6 +31,11 @@ import android.provider.Settings
 import android.util.DisplayMetrics
 import android.view.inputmethod.InputMethodManager
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableDoubleStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -306,6 +311,116 @@ class PlayerViewModel @JvmOverloads constructor(
 
     private val _primaryButton = MutableStateFlow<CustomButton?>(null)
     val primaryButton = _primaryButton.asStateFlow()
+
+    // --- SPEED HOLD FEATURE START ---
+
+    private var originalSpeed: Double = 1.0
+
+    // UI States
+    var isHoldingSpeed by mutableStateOf(false)
+    var isSpeedDragMode by mutableStateOf(false)
+    var isSpeedListVisible by mutableStateOf(false) // <--- NEW: Controls collapse/expand
+
+    // Values
+    var currentHoldSpeed by mutableDoubleStateOf(1.0)
+    var highlightedSpeedIndex by mutableIntStateOf(0)
+    var availableHoldSpeeds: List<Double> = emptyList()
+
+    // Internal Logic
+    private var speedDragAccumulator = 0f
+    private var speedSelectionJob: Job? = null
+
+    fun onHoldSpeedStart() {
+        originalSpeed = MPVLib.getPropertyDouble("speed") ?: 1.0
+
+        // Load Default Speed from String Pref (safe parse)
+        val defaultSpeedString = gesturePreferences.defaultHoldSpeed().get()
+        val defaultSpeed = defaultSpeedString.toDoubleOrNull() ?: 2.0
+
+        isHoldingSpeed = true
+        isSpeedDragMode = false
+        isSpeedListVisible = false // Start collapsed (Small Pill)
+        speedDragAccumulator = 0f
+
+        currentHoldSpeed = defaultSpeed
+        MPVLib.setPropertyDouble("speed", currentHoldSpeed)
+
+        // Load Custom List
+        val rawListString = gesturePreferences.customHoldSpeeds().get()
+        val parsedList = try {
+            rawListString.split(",").mapNotNull { it.trim().toDoubleOrNull() }.sorted()
+        } catch (e: Exception) {
+            listOf(0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0)
+        }
+        availableHoldSpeeds = if (parsedList.isNotEmpty()) parsedList else listOf(1.0, 2.0, 3.0)
+
+        // Highlight closest
+        var closestIndex = 0
+        var minDiff = Double.MAX_VALUE
+        for (i in availableHoldSpeeds.indices) {
+            val diff = Math.abs(availableHoldSpeeds[i] - defaultSpeed)
+            if (diff < minDiff) {
+                minDiff = diff
+                closestIndex = i
+            }
+        }
+        highlightedSpeedIndex = closestIndex
+    }
+
+    fun onHoldSpeedDrag(dragAmount: Float) {
+        if (!isHoldingSpeed) return
+
+        if (!isSpeedDragMode) {
+            speedDragAccumulator += dragAmount
+            if (Math.abs(speedDragAccumulator) > 40f) {
+                isSpeedDragMode = true
+                isSpeedListVisible = true // Expand list on first drag
+                speedDragAccumulator = 0f
+            } else {
+                return
+            }
+        }
+
+        speedDragAccumulator += dragAmount
+        val stepThreshold = 50f
+
+        if (Math.abs(speedDragAccumulator) > stepThreshold) {
+            val steps = (speedDragAccumulator / stepThreshold).toInt()
+
+            if (availableHoldSpeeds.isNotEmpty()) {
+                val newIndex = (highlightedSpeedIndex + steps).coerceIn(0, availableHoldSpeeds.lastIndex)
+
+                if (newIndex != highlightedSpeedIndex) {
+                    highlightedSpeedIndex = newIndex
+                    isSpeedListVisible = true // Keep list open while changing
+
+                    // Debounce: Wait 1000ms
+                    speedSelectionJob?.cancel()
+                    speedSelectionJob = viewModelScope.launch {
+                        delay(1000)
+                        if (isHoldingSpeed) {
+                            currentHoldSpeed = availableHoldSpeeds[highlightedSpeedIndex]
+                            MPVLib.setPropertyDouble("speed", currentHoldSpeed)
+                            // Collapse UI after delay triggers
+                            isSpeedListVisible = false
+                        }
+                    }
+                }
+            }
+            speedDragAccumulator -= (steps * stepThreshold)
+        }
+    }
+
+    fun onHoldSpeedEnd() {
+        if (isHoldingSpeed) {
+            isHoldingSpeed = false
+            isSpeedDragMode = false
+            isSpeedListVisible = false
+            speedSelectionJob?.cancel()
+            MPVLib.setPropertyDouble("speed", originalSpeed)
+        }
+    }
+    // --- SPEED HOLD FEATURE END ---
 
     init {
         viewModelScope.launchIO {

@@ -11,6 +11,7 @@ data class BackupOptions(
     val chapters: Boolean = true,
     val tracking: Boolean = true,
     val history: Boolean = true,
+    val customInfo: Boolean = true,
     val readEntries: Boolean = true,
     val appSettings: Boolean = true,
     val extensionRepoSettings: Boolean = true,
@@ -26,6 +27,7 @@ data class BackupOptions(
         chapters,
         tracking,
         history,
+        customInfo,
         readEntries,
         appSettings,
         extensionRepoSettings,
@@ -71,6 +73,12 @@ data class BackupOptions(
                 label = MR.strings.categories,
                 getter = BackupOptions::categories,
                 setter = { options, enabled -> options.copy(categories = enabled) },
+            ),
+            Entry(
+                label = MR.strings.custom_entry_metadata,
+                getter = BackupOptions::customInfo,
+                setter = { options, enabled -> options.copy(customInfo = enabled) },
+                enabled = { it.libraryEntries },
             ),
             Entry(
                 label = AYMR.strings.non_library_settings,

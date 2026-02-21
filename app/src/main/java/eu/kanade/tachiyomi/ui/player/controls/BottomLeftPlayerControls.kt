@@ -26,9 +26,15 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.ScreenRotation
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import kotlin.math.abs
+import kotlin.math.roundToInt
 import dev.vivvvek.seeker.Segment
 import eu.kanade.tachiyomi.ui.player.Sheets
 import eu.kanade.tachiyomi.ui.player.controls.components.ControlsButton
@@ -36,6 +42,7 @@ import eu.kanade.tachiyomi.ui.player.controls.components.CurrentChapter
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.i18n.stringResource
+import tachiyomi.presentation.core.util.collectAsState
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
@@ -50,6 +57,36 @@ fun BottomLeftPlayerControls(
     modifier: Modifier = Modifier,
 ) {
     val playerPreferences = remember { Injekt.get<PlayerPreferences>() }
+    val playbackSpeedPresets by playerPreferences.speedPresets().collectAsState()
+    val recentSpeedList by playerPreferences.recentSpeedList().collectAsState()
+    val sortedPresets = remember(playbackSpeedPresets) {
+        playbackSpeedPresets
+            .mapNotNull { it.toFloatOrNull() }
+            .distinct()
+            .sorted()
+            .ifEmpty { listOf(1f) }
+    }
+    val dragSpeeds = remember(recentSpeedList, sortedPresets) {
+        val recent = parseSpeeds(recentSpeedList)
+        val merged = if (recent.isEmpty()) {
+            sortedPresets
+        } else {
+            recent + sortedPresets
+        }
+        merged.distinct().take(12)
+    }
+    var showSpeedPresets by remember { mutableStateOf(false) }
+
+    fun applySpeed(speed: Float, closeSheet: Boolean = false) {
+        onPlaybackSpeedChange(speed)
+        playerPreferences.playerSpeed().set(speed)
+        val normalized = speed.normalizeSpeed()
+        val updatedRecents = listOf(normalized) + dragSpeeds
+            .map { it.normalizeSpeed() }
+            .filterNot { abs(it - normalized) < 0.01f }
+        playerPreferences.recentSpeedList().set(updatedRecents.take(12).joinToString(",") { it.prettySpeed() })
+        if (closeSheet) showSpeedPresets = false
+    }
 
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -84,3 +121,14 @@ fun BottomLeftPlayerControls(
         }
     }
 }
+
+
+private fun parseSpeeds(value: String): List<Float> = value
+    .split(",")
+    .mapNotNull { it.trim().toFloatOrNull() }
+    .map { it.normalizeSpeed() }
+    .distinct()
+
+private fun Float.normalizeSpeed(): Float = ((coerceIn(0.01f, 6f) * 100f).roundToInt()) / 100f
+
+private fun Float.prettySpeed(): String = normalizeSpeed().toString()

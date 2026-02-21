@@ -63,6 +63,7 @@ import eu.kanade.tachiyomi.ui.more.OnboardingScreen
 import eu.kanade.tachiyomi.util.CrashLogUtil
 import eu.kanade.tachiyomi.util.system.GLUtil
 import eu.kanade.tachiyomi.util.system.isReleaseBuildType
+import eu.kanade.tachiyomi.util.system.isRootAvailable
 import eu.kanade.tachiyomi.util.system.isShizukuInstalled
 import eu.kanade.tachiyomi.util.system.powerManager
 import eu.kanade.tachiyomi.util.system.setDefaultSettings
@@ -503,6 +504,7 @@ object SettingsAdvancedScreen : SearchableSettings {
         val uriHandler = LocalUriHandler.current
         val extensionInstallerPref = basePreferences.extensionInstaller()
         var shizukuMissing by rememberSaveable { mutableStateOf(false) }
+        var rootMissing by rememberSaveable { mutableStateOf(false) }
         val trustAnimeExtension = remember { Injekt.get<TrustAnimeExtension>() }
         val trustMangaExtension = remember { Injekt.get<TrustMangaExtension>() }
 
@@ -528,6 +530,23 @@ object SettingsAdvancedScreen : SearchableSettings {
                             uriHandler.openUri("https://shizuku.rikka.app/download")
                         },
                     ) {
+                        Text(text = stringResource(MR.strings.action_ok))
+                    }
+                },
+            )
+        }
+        if (rootMissing) {
+            val dismiss = { rootMissing = false }
+            AlertDialog(
+                onDismissRequest = dismiss,
+                title = { Text(text = stringResource(MR.strings.ext_installer_root)) },
+                text = {
+                    Text(
+                        text = stringResource(MR.strings.ext_installer_root_unavailable_dialog),
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = dismiss) {
                         Text(text = stringResource(MR.strings.action_ok))
                     }
                 },

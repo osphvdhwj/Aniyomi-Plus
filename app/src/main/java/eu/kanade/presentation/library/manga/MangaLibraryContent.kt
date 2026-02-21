@@ -12,10 +12,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
 import eu.kanade.core.preference.PreferenceMutableState
+import eu.kanade.presentation.library.components.LibraryMediaTab
+import eu.kanade.presentation.library.components.LibraryMediaTabs
+import eu.kanade.presentation.library.components.LibraryQuickFilter
+import eu.kanade.presentation.library.components.LibraryQuickFilterBar
 import eu.kanade.presentation.library.components.LibraryTabs
 import eu.kanade.tachiyomi.ui.library.manga.MangaLibraryItem
 import kotlinx.coroutines.delay
@@ -36,6 +41,7 @@ fun MangaLibraryContent(
     hasActiveFilters: Boolean,
     showPageTabs: Boolean,
     onChangeCurrentPage: (Int) -> Unit,
+    onSwitchToAnime: () -> Unit,
     onMangaClicked: (Long) -> Unit,
     onContinueReadingClicked: ((LibraryManga) -> Unit)?,
     onToggleSelection: (LibraryManga) -> Unit,
@@ -54,11 +60,24 @@ fun MangaLibraryContent(
             end = contentPadding.calculateEndPadding(LocalLayoutDirection.current),
         ),
     ) {
+        LibraryMediaTabs(
+            currentTab = LibraryMediaTab.Manga,
+            onTabChange = {
+                if (it == LibraryMediaTab.Anime) onSwitchToAnime()
+            },
+        )
+
         val coercedCurrentPage = remember { currentPage().coerceAtMost(categories.lastIndex) }
         val pagerState = rememberPagerState(coercedCurrentPage) { categories.size }
 
         val scope = rememberCoroutineScope()
+        var quickFilter by rememberSaveable { mutableStateOf(LibraryQuickFilter.All) }
         var isRefreshing by remember(pagerState.currentPage) { mutableStateOf(false) }
+
+        LibraryQuickFilterBar(
+            selected = quickFilter,
+            onChange = { quickFilter = it },
+        )
 
         if (showPageTabs && categories.size > 1) {
             LaunchedEffect(categories) {
@@ -109,6 +128,7 @@ fun MangaLibraryContent(
                 onClickManga = onClickManga,
                 onLongClickManga = onToggleRangeSelection,
                 onClickContinueReading = onContinueReadingClicked,
+                quickFilter = quickFilter,
             )
         }
 

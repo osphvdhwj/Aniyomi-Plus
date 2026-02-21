@@ -7,6 +7,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -24,6 +25,7 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toPersistentMap
+import tachiyomi.core.common.preference.Preference as TPreference
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.components.WheelTextPicker
@@ -44,11 +46,59 @@ object PlayerSettingsGesturesScreen : SearchableSettings {
         return listOf(
             getSlidersGroup(gesturePreferences = gesturePreferences),
             getSeekingGroup(gesturePreferences = gesturePreferences),
+            getLongPressGroup(gesturePreferences = gesturePreferences), // Updated Group
             getDoubleTapGroup(gesturePreferences = gesturePreferences),
             getMediaControlsGroup(gesturePreferences = gesturePreferences),
         )
     }
 
+    // Helper to observe Preference changes for immediate UI updates
+    @Composable
+    fun <T> TPreference<T>.collectAsState(): State<T> {
+        val flow = remember(this) { this.changes() }
+        return flow.collectAsState(initial = this.get())
+    }
+/* MY CODE */
+    @Composable
+    private fun getLongPressGroup(gesturePreferences: GesturePreferences): Preference.PreferenceGroup {
+        val defaultHoldSpeed = gesturePreferences.defaultHoldSpeed()
+        val customHoldSpeeds = gesturePreferences.customHoldSpeeds()
+
+        // This now works because defaultHoldSpeed is a String preference
+        val currentDefault by defaultHoldSpeed.collectAsState()
+
+        return Preference.PreferenceGroup(
+            title = "Hold to Speed",
+            preferenceItems = persistentListOf(
+                Preference.PreferenceItem.EditTextPreference(
+                    preference = defaultHoldSpeed,
+                    title = "Default hold speed",
+                    subtitle = "Current: ${currentDefault}x",
+                    onValueChanged = { newValue ->
+                        try {
+                            val floatVal = newValue.toFloat()
+                            if (floatVal > 0.1f && floatVal <= 10.0f) {
+                                true
+                            } else false
+                        } catch (e: Exception) { false }
+                    }
+                ),
+                // 2. Custom Drag List
+                Preference.PreferenceItem.EditTextPreference(
+                    preference = customHoldSpeeds,
+                    title = "Drag speeds list",
+                    subtitle = "Speeds shown when dragging (comma separated). \nExample: 0.5, 1.0, 2.0, 3.0",
+                    onValueChanged = { newValue ->
+                        try {
+                            val list = newValue.split(",").map { it.trim().toDouble() }
+                            list.isNotEmpty()
+                        } catch (e: Exception) { false }
+                    }
+                ),
+            ),
+        )
+    }
+    /* END */
     @Composable
     private fun getSlidersGroup(gesturePreferences: GesturePreferences): Preference.PreferenceGroup {
         val enableVolumeBrightnessGestures = gesturePreferences.gestureVolumeBrightness()

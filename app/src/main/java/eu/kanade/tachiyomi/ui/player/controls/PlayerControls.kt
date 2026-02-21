@@ -31,6 +31,7 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -47,8 +48,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -70,6 +73,7 @@ import eu.kanade.tachiyomi.ui.player.controls.components.BrightnessOverlay
 import eu.kanade.tachiyomi.ui.player.controls.components.BrightnessSlider
 import eu.kanade.tachiyomi.ui.player.controls.components.ControlsButton
 import eu.kanade.tachiyomi.ui.player.controls.components.SeekbarWithTimers
+import eu.kanade.tachiyomi.ui.player.controls.components.SpeedHoldOverlay
 import eu.kanade.tachiyomi.ui.player.controls.components.TextPlayerUpdate
 import eu.kanade.tachiyomi.ui.player.controls.components.VolumeSlider
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.toFixed
@@ -146,10 +150,31 @@ fun PlayerControls(
         animationSpec = playerControlsExitAnimationSpec(),
         label = "controls_transparent_overlay",
     )
+    // ... inside PlayerControls Composable ...
+
     GestureHandler(
         viewModel = viewModel,
         interactionSource = interactionSource,
     )
+
+    // --- SPEED HOLD OVERLAY ---
+    if (viewModel.isHoldingSpeed) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.TopCenter
+        ) {
+            SpeedHoldOverlay(
+                // Use isSpeedListVisible logic
+                isDragMode = viewModel.isSpeedListVisible,
+                currentSpeed = viewModel.currentHoldSpeed,
+                availableSpeeds = viewModel.availableHoldSpeeds,
+                selectedIndex = viewModel.highlightedSpeedIndex,
+                modifier = Modifier.padding(top = 48.dp)
+            )
+        }
+    }
+    // --- SPEED HOLD OVERLAY END ---
+
     DoubleTapToSeekOvals(doubleTapSeekAmount, seekText, interactionSource)
     CompositionLocalProvider(
         LocalRippleConfiguration provides playerRippleConfiguration,

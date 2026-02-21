@@ -33,4 +33,8 @@ class GesturePreferences(
     fun mediaPreviousGesture() = preferenceStore.getEnum("pref_media_previous", SingleActionGesture.Switch)
     fun mediaPlayPauseGesture() = preferenceStore.getEnum("pref_media_playpause", SingleActionGesture.PlayPause)
     fun mediaNextGesture() = preferenceStore.getEnum("pref_media_next", SingleActionGesture.Switch)
+
+    fun defaultHoldSpeed() = preferenceStore.getString("pref_default_hold_speed_v2", "2.0")
+    fun customHoldSpeeds() = preferenceStore.getString("pref_custom_hold_speeds", "0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0")
+    fun allowGestures() = preferenceStore.getBoolean("pref_allow_gestures_in_panels", false)
 }

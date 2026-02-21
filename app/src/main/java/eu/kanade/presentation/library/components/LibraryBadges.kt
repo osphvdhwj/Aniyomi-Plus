@@ -47,6 +47,23 @@ internal fun LanguageBadge(
     }
 }
 
+
+@Composable
+internal fun GenreBadge(genre: String?) {
+    val normalized = genre
+        ?.trim()
+        ?.takeIf { it.isNotEmpty() }
+        ?.take(10)
+
+    if (normalized != null) {
+        Badge(
+            text = normalized,
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            textColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
 @PreviewLightDark
 @Composable
 private fun BadgePreview() {
@@ -56,6 +73,7 @@ private fun BadgePreview() {
             UnviewedBadge(count = 10)
             LanguageBadge(isLocal = true, sourceLanguage = "EN")
             LanguageBadge(isLocal = false, sourceLanguage = "EN")
+            GenreBadge("Action")
         }
     }
 }

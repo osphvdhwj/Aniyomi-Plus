@@ -18,6 +18,7 @@
     <string name="track">Tracking</string>
     <string name="delete_downloaded">Delete downloaded</string>
     <string name="history">History</string>
+    <string name="custom_entry_metadata">Custom metadata (title, tags, description)</string>
     <string name="scanlator">Scanlator</string>
 
     <!-- Screen titles -->
@@ -42,6 +43,7 @@
 
     <!-- Shared labels -->
     <string name="label_started">Started</string>
+    <string name="not_started">Not started</string>
     <string name="label_local">Local</string>
     <string name="label_downloaded">Downloaded</string>
 
@@ -348,9 +350,11 @@
     <string name="ext_installer_legacy">Legacy</string>
     <string name="ext_installer_packageinstaller" translatable="false">PackageInstaller</string>
     <string name="ext_installer_shizuku" translatable="false">Shizuku</string>
+    <string name="ext_installer_root" translatable="false">Root (silent)</string>
     <string name="ext_installer_private" translatable="false">Private</string>
     <string name="ext_installer_shizuku_stopped">Shizuku is not running</string>
     <string name="ext_installer_shizuku_unavailable_dialog">Install and start Shizuku to use Shizuku as extension installer.</string>
+    <string name="ext_installer_root_unavailable_dialog">Root shell is not available. Grant root access and try again.</string>
     <string name="ext_revoke_trust">Revoke trusted unknown extensions</string>
 
     <!-- Extension repos -->
