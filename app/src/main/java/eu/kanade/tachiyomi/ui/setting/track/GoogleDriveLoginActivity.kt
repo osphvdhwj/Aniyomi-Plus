@@ -14,30 +14,40 @@ class GoogleDriveLoginActivity : BaseOAuthLoginActivity() {
     private val googleDriveService = Injekt.get<GoogleDriveService>()
     override fun handleResult(data: Uri?) {
         val code = data?.getQueryParameter("code")
+        val state = data?.getQueryParameter("state")
         val error = data?.getQueryParameter("error")
         if (code != null) {
-            lifecycleScope.launchIO {
-                googleDriveService.handleAuthorizationCode(
-                    code,
-                    this@GoogleDriveLoginActivity,
-                    onSuccess = {
-                        Toast.makeText(
-                            this@GoogleDriveLoginActivity,
-                            stringResource(TLMR.strings.google_drive_login_success),
-                            Toast.LENGTH_LONG,
-                        ).show()
+            if (googleDriveService.verifyState(state)) {
+                lifecycleScope.launchIO {
+                    googleDriveService.handleAuthorizationCode(
+                        code,
+                        this@GoogleDriveLoginActivity,
+                        onSuccess = {
+                            Toast.makeText(
+                                this@GoogleDriveLoginActivity,
+                                stringResource(TLMR.strings.google_drive_login_success),
+                                Toast.LENGTH_LONG,
+                            ).show()
 
-                        returnToSettings()
-                    },
-                    onFailure = { error ->
-                        Toast.makeText(
-                            this@GoogleDriveLoginActivity,
-                            stringResource(TLMR.strings.google_drive_login_failed, error),
-                            Toast.LENGTH_LONG,
-                        ).show()
-                        returnToSettings()
-                    },
-                )
+                            returnToSettings()
+                        },
+                        onFailure = { error ->
+                            Toast.makeText(
+                                this@GoogleDriveLoginActivity,
+                                stringResource(TLMR.strings.google_drive_login_failed, error),
+                                Toast.LENGTH_LONG,
+                            ).show()
+                            returnToSettings()
+                        },
+                    )
+                }
+            } else {
+                Toast.makeText(
+                    this,
+                    stringResource(TLMR.strings.google_drive_login_failed, "Invalid state"),
+                    Toast.LENGTH_LONG,
+                ).show()
+                returnToSettings()
             }
         } else if (error != null) {
             Toast.makeText(

@@ -31,6 +31,11 @@ class SyncPreferences(
         "",
     )
 
+    fun googleDriveAuthState() = preferenceStore.getString(
+        Preference.appStateKey("google_drive_auth_state"),
+        "",
+    )
+
     fun uniqueDeviceID(): String {
         val uniqueIDPreference = preferenceStore.getString(Preference.appStateKey("unique_device_id"), "")
 

@@ -34,6 +34,7 @@ import uy.kohesive.injekt.api.get
 import java.io.IOException
 import java.io.PipedInputStream
 import java.io.PipedOutputStream
+import java.util.UUID
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
 
@@ -313,10 +314,20 @@ class GoogleDriveService(private val context: Context) {
             listOf(DriveScopes.DRIVE_FILE, DriveScopes.DRIVE_APPDATA),
         ).setAccessType("offline").build()
 
+        val state = UUID.randomUUID().toString()
+        syncPreferences.googleDriveAuthState().set(state)
+
         return flow.newAuthorizationUrl()
             .setRedirectUri(REDIRECT_URI)
             .setApprovalPrompt("force")
+            .setState(state)
             .build()
+    }
+
+    fun verifyState(state: String?): Boolean {
+        val expectedState = syncPreferences.googleDriveAuthState().get()
+        syncPreferences.googleDriveAuthState().delete()
+        return !state.isNullOrEmpty() && expectedState.isNotEmpty() && state == expectedState
     }
 
     @Suppress("TooGenericExceptionThrown")
