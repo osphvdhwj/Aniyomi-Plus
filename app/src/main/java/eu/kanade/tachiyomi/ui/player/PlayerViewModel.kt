@@ -131,6 +131,7 @@ import tachiyomi.domain.items.episode.interactor.UpdateEpisode
 import tachiyomi.domain.items.episode.model.Episode
 import tachiyomi.domain.items.episode.model.EpisodeUpdate
 import tachiyomi.domain.items.episode.service.getEpisodeSort
+import tachiyomi.domain.library.anime.interactor.GetLibraryAnime
 import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
 import tachiyomi.domain.track.anime.interactor.GetAnimeTracks
@@ -177,6 +178,7 @@ class PlayerViewModel @JvmOverloads constructor(
     private val trackSelect: TrackSelect = Injekt.get(),
     private val getIncognitoState: GetAnimeIncognitoState = Injekt.get(),
     private val libraryPreferences: LibraryPreferences = Injekt.get(),
+    private val getLibraryAnime: GetLibraryAnime = Injekt.get(),
     uiPreferences: UiPreferences = Injekt.get(),
 ) : ViewModel() {
 
@@ -427,6 +429,7 @@ class PlayerViewModel @JvmOverloads constructor(
 
     val currentShader = MutableStateFlow<ShaderPreset?>(null)
     val isExternalVideo = MutableStateFlow(false)
+    val librarySearchResults = MutableStateFlow<List<Anime>>(emptyList())
     init {
         viewModelScope.launchIO { ShaderUtils.copyShadersIfNeeded(Injekt.get<Application>()) }
         viewModelScope.launchIO {
@@ -1793,6 +1796,7 @@ class PlayerViewModel @JvmOverloads constructor(
      * If incognito mode isn't on or has at least 1 tracker
      */
     private suspend fun saveEpisodeProgress(episode: Episode) {
+        if (isExternalVideo.value) return
         if (!incognitoMode || hasTrackers) {
             updateEpisode.await(
                 EpisodeUpdate(
@@ -1811,6 +1815,7 @@ class PlayerViewModel @JvmOverloads constructor(
      * Saves this [episode] last seen history if incognito mode isn't on.
      */
     private suspend fun saveEpisodeHistory(episode: Episode) {
+        if (isExternalVideo.value) return
         if (!incognitoMode) {
             val episodeId = episode.id!!
             val seenAt = Date()
@@ -2227,6 +2232,39 @@ fun CustomButton.executeLongPress() {
         _currentVideo.value = video
 
         isLoadingEpisode.value = false
+    }
+
+    fun searchLibrary(query: String) {
+        viewModelScope.launchIO {
+            val library = getLibraryAnime.await()
+            if (query.isBlank()) {
+                librarySearchResults.value = library
+            } else {
+                librarySearchResults.value = library.filter { it.title.contains(query, ignoreCase = true) }
+            }
+        }
+    }
+
+    fun selectAnimeForLink(anime: Anime) {
+        viewModelScope.launchIO {
+            val episodes = getEpisodesByAnimeId.await(anime.id)
+            val sorted = getEpisodeSort.sort(episodes, anime)
+            _currentPlaylist.value = sorted
+            _currentAnime.value = anime
+            withUIContext {
+                showDialog(Dialogs.EpisodeList)
+            }
+        }
+    }
+
+    fun linkToEpisode(episodeId: Long) {
+        viewModelScope.launchIO {
+            val episode = currentPlaylist.value.find { it.id == episodeId } ?: return@launchIO
+            val anime = currentAnime.value ?: return@launchIO
+
+            _currentEpisode.value = episode
+            isExternalVideo.value = false
+        }
     }
 }
 

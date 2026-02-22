@@ -38,6 +38,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Brush
 import androidx.compose.material.icons.filled.KeyboardAlt
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Timer
@@ -92,6 +93,8 @@ fun MoreSheet(
     onEnterFiltersPanel: () -> Unit,
     customButtons: ImmutableList<CustomButton>,
     onEnterShadersSheet: () -> Unit,
+    isExternalVideo: Boolean = false,
+    onOpenIdentifySheet: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val advancedPreferences = remember { Injekt.get<AdvancedPlayerPreferences>() }
@@ -165,6 +168,18 @@ fun MoreSheet(
                         ) {
                             Icon(imageVector = Icons.Default.Brush, contentDescription = null)
                             Text(text = "Shaders")
+                        }
+                    }
+                }
+
+                if (isExternalVideo) {
+                    TextButton(onClick = onOpenIdentifySheet) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.padding.extraSmall),
+                        ) {
+                            Icon(imageVector = Icons.Default.Search, contentDescription = null)
+                            Text(text = "Identify")
                         }
                     }
                 }

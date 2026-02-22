@@ -577,6 +577,8 @@ fun PlayerControls(
         val sheetShown by viewModel.sheetShown.collectAsState()
         val anime by viewModel.currentAnime.collectAsState()
         val currentShader by viewModel.currentShader.collectAsState()
+        val librarySearchResults by viewModel.librarySearchResults.collectAsState()
+        val isExternalVideo by viewModel.isExternalVideo.collectAsState()
         val dismissSheet by viewModel.dismissSheet.collectAsState()
         val subtitles by viewModel.subtitleTracks.collectAsState()
         val selectedSubtitles by viewModel.selectedSubtitles.collectAsState()
@@ -599,6 +601,11 @@ fun PlayerControls(
             onSelectShader = viewModel::applyShader,
             onClearShaders = viewModel::clearShaders,
             onOpenShadersSheet = { viewModel.showSheet(Sheets.Shaders) },
+            librarySearchResults = librarySearchResults,
+            onSearchLibrary = viewModel::searchLibrary,
+            onSelectAnime = viewModel::selectAnimeForLink,
+            onOpenIdentifySheet = { viewModel.showSheet(Sheets.IdentifyAnime) },
+            isExternalVideo = isExternalVideo,
             sheetShown = sheetShown,
             subtitles = subtitles.toImmutableList(),
             selectedSubtitles = selectedSubtitles.toList().toImmutableList(),
@@ -671,7 +678,7 @@ fun PlayerControls(
             onFillermarkClicked = viewModel::fillermarkEpisode,
             onEpisodeClicked = {
                 viewModel.showDialog(Dialogs.None)
-                activity.changeEpisode(it)
+                if (isExternalVideo) viewModel.linkToEpisode(it!!) else activity.changeEpisode(it)
             },
             onDismissRequest = { viewModel.showDialog(Dialogs.None) },
         )
