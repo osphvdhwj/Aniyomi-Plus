@@ -575,6 +575,7 @@ fun PlayerControls(
         }
 
         val sheetShown by viewModel.sheetShown.collectAsState()
+        val anime by viewModel.currentAnime.collectAsState()
         val dismissSheet by viewModel.dismissSheet.collectAsState()
         val subtitles by viewModel.subtitleTracks.collectAsState()
         val selectedSubtitles by viewModel.selectedSubtitles.collectAsState()
@@ -652,7 +653,6 @@ fun PlayerControls(
 
         val activity = LocalContext.current as PlayerActivity
         val dialog by viewModel.dialogShown.collectAsState()
-        val anime by viewModel.currentAnime.collectAsState()
         val playlist by viewModel.currentPlaylist.collectAsState()
 
         PlayerDialogs(
