@@ -128,8 +128,6 @@ import tachiyomi.domain.history.anime.interactor.UpsertAnimeHistory
 import tachiyomi.domain.history.anime.model.AnimeHistoryUpdate
 import tachiyomi.domain.items.episode.interactor.GetEpisodesByAnimeId
 import tachiyomi.domain.items.episode.interactor.UpdateEpisode
-import tachiyomi.domain.items.episode.model.Episode
-import tachiyomi.domain.items.episode.model.EpisodeUpdate
 import tachiyomi.domain.items.episode.service.getEpisodeSort
 import tachiyomi.domain.library.anime.interactor.GetLibraryAnime
 import tachiyomi.domain.library.service.LibraryPreferences
@@ -145,6 +143,7 @@ import java.io.InputStream
 import java.util.Date
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.cancellation.CancellationException
+import tachiyomi.domain.items.episode.model.Episode as DomainEpisode
 
 class PlayerViewModelProviderFactory(
     private val activity: PlayerActivity,
@@ -2187,14 +2186,6 @@ class PlayerViewModel @JvmOverloads constructor(
         data class SavedImage(val result: SaveImageResult) : Event()
         data class ShareImage(val uri: Uri, val seconds: String) : Event()
     }
-}
-
-fun CustomButton.execute() {
-    MPVLib.command(arrayOf("script-message", "call_button_$id"))
-}
-
-fun CustomButton.executeLongPress() {
-    MPVLib.command(arrayOf("script-message", "call_button_${id}_long"))
     fun applyShader(preset: ShaderPreset) {
         val context = Injekt.get<Application>()
         MPVLib.command(arrayOf("change-list", "glsl-shaders", "clr", ""))
@@ -2219,11 +2210,11 @@ fun CustomButton.executeLongPress() {
             initialized = true,
         )
 
-        val dummyEpisode = Episode.create().copy(
+        val dummyEpisode = DomainEpisode.create().copy(
             name = "External",
             url = uri.toString(),
             animeId = dummyAnime.id,
-        )
+        ).toDbEpisode()
 
         val video = Video(uri.toString(), "External", uri.toString(), uri)
 
@@ -2248,7 +2239,7 @@ fun CustomButton.executeLongPress() {
     fun selectAnimeForLink(anime: Anime) {
         viewModelScope.launchIO {
             val episodes = getEpisodesByAnimeId.await(anime.id)
-            val sorted = getEpisodeSort.sort(episodes, anime)
+            val sorted = getEpisodeSort.sort(episodes, anime).map { it.toDbEpisode() }
             _currentPlaylist.value = sorted
             _currentAnime.value = anime
             withUIContext {
@@ -2266,6 +2257,14 @@ fun CustomButton.executeLongPress() {
             isExternalVideo.value = false
         }
     }
+}
+
+fun CustomButton.execute() {
+    MPVLib.command(arrayOf("script-message", "call_button_$id"))
+}
+
+fun CustomButton.executeLongPress() {
+    MPVLib.command(arrayOf("script-message", "call_button_${id}_long"))
 }
 
 fun Float.normalize(inMin: Float, inMax: Float, outMin: Float, outMax: Float): Float {

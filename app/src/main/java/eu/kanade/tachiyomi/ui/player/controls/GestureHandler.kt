@@ -92,10 +92,10 @@ fun GestureHandler(
 
     val seekGesture by gesturePreferences.gestureHorizontalSeek().collectAsState()
     val gestureVolumeBrightness by gesturePreferences.gestureVolumeBrightness().collectAsState()
-    val preciseSeeking by gesturePreferences.gesturePreciseSeeking().collectAsState()
+    val preciseSeeking by gesturePreferences.preciseSeeking().collectAsState()
     val swapVolumeBrightness by gesturePreferences.swapVolumeBrightness().collectAsState()
     val volumeBoostingCap by audioPreferences.volumeBoostCap().collectAsState()
-    val showSeekbar by playerPreferences.alwaysShowSeekbar().collectAsState()
+    val showSeekbar by playerPreferences.showSeekbar().collectAsState()
 
     val currentVolume by viewModel.currentVolume.collectAsState()
     val currentMPVVolume by viewModel.currentMPVVolume.collectAsState()
@@ -272,13 +272,14 @@ fun GestureHandler(
                         if (areControlsLocked) {
                             viewModel.showPanel(Panels.None)
                             viewModel.showSheet(Sheets.None)
-                            viewModel.showControls(true)
+                            viewModel.showControls()
                             return@detectTapGestures
                         }
                         if (isDoubleTapSeeking) return@detectTapGestures
                         viewModel.showControls()
                     },
                     onPress = { press ->
+                        val pressInteraction = PressInteraction.Press(press)
                         if (areControlsLocked) return@detectTapGestures
                         // this press action is weird, we should have a better way to handle this
                         if (isDoubleTapSeeking) {
@@ -294,14 +295,14 @@ fun GestureHandler(
                         } else {
                             isDoubleTapSeeking = false
                         }
-                        interactionSource.emit(press)
+                        interactionSource.emit(pressInteraction)
                         tryAwaitRelease()
                         if (isLongPressing) {
                             isLongPressing = false
                             MPVLib.setPropertyDouble("speed", originalSpeed.toDouble())
                             viewModel.playerUpdate.update { PlayerUpdates.None }
                         }
-                        interactionSource.emit(PressInteraction.Release(press))
+                        interactionSource.emit(PressInteraction.Release(pressInteraction))
                     },
                     onLongPress = {
                         if (areControlsLocked) return@detectTapGestures
@@ -409,7 +410,7 @@ suspend fun PointerInputScope.detectZoomGestures(
                 if (pastTouchSlop) {
                     if (event.changes.size > 1) {
                         onZoom(zoomChange, panChange)
-                        event.changes.forEach { if (it.positionChanged()) it.consume() }
+                        event.changes.forEach { if (it.positionChange() != Offset.Zero) it.consume() }
                     }
                 }
             }
