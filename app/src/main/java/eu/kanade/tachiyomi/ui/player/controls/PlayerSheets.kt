@@ -67,7 +67,6 @@ fun PlayerSheets(
 
     // chapters sheet
     chapter: Segment?,
-    animeCoverUrl: String? = null,
     chapters: ImmutableList<Segment>,
     onSeekToChapter: (Int) -> Unit,
 
@@ -153,7 +152,6 @@ fun PlayerSheets(
         Sheets.Chapters -> {
             if (chapter == null) return
             ChaptersSheet(
-                coverUrl = animeCoverUrl,
                 chapters = chapters,
                 currentChapter = chapter,
                 onClick = { onSeekToChapter(chapters.indexOf(it)) },

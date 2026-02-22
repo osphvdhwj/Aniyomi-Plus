@@ -17,30 +17,18 @@
 
 package eu.kanade.tachiyomi.ui.player.controls.components.sheets
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
 import dev.vivvvek.seeker.Segment
 import `is`.xyz.mpv.Utils
 import kotlinx.collections.immutable.ImmutableList
@@ -55,7 +43,6 @@ fun ChaptersSheet(
     onClick: (Segment) -> Unit,
     onDismissRequest: () -> Unit,
     dismissSheet: Boolean,
-    coverUrl: String? = null,
     modifier: Modifier = Modifier,
 ) {
     GenericTracksSheet(
@@ -72,7 +59,6 @@ fun ChaptersSheet(
                 index = chapters.indexOf(it),
                 selected = currentChapter == it,
                 onClick = { onClick(it) },
-                coverUrl = coverUrl,
             )
         },
         onDismissRequest = onDismissRequest,
@@ -87,7 +73,6 @@ fun ChapterTrack(
     index: Int,
     selected: Boolean,
     onClick: () -> Unit,
-    coverUrl: String?,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -95,58 +80,20 @@ fun ChapterTrack(
             .fillMaxWidth()
             .clickable(onClick = onClick)
             .padding(vertical = MaterialTheme.padding.small, horizontal = MaterialTheme.padding.medium),
-        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.padding.medium),
-        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        // Thumbnail
-        Box(
-            modifier = Modifier
-                .width(160.dp)
-                .height(90.dp)
-                .clip(MaterialTheme.shapes.small)
-                .background(MaterialTheme.colorScheme.surfaceVariant),
-            contentAlignment = Alignment.BottomEnd,
-        ) {
-            if (coverUrl != null) {
-                AsyncImage(
-                    model = coverUrl,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize(),
-                )
-            }
-            Surface(
-                color = Color.Black.copy(alpha = 0.7f),
-                shape = MaterialTheme.shapes.extraSmall,
-                modifier = Modifier.padding(4.dp),
-            ) {
-                Text(
-                    text = Utils.prettyTime(chapter.start.toInt()),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color.White,
-                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
-                )
-            }
-        }
-
-        // Details
-        Column(
+        Text(
+            stringResource(AYMR.strings.player_sheets_track_title_wo_lang, index + 1, chapter.name),
+            fontStyle = if (selected) FontStyle.Italic else FontStyle.Normal,
+            fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.Normal,
+            maxLines = 1,
             modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.Center,
-        ) {
-            Text(
-                text = chapter.name,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-                color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                text = stringResource(AYMR.strings.player_sheets_track_title_wo_lang, index + 1, ""),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+            overflow = TextOverflow.Ellipsis,
+        )
+        Text(
+            Utils.prettyTime(chapter.start.toInt()),
+            fontStyle = if (selected) FontStyle.Italic else FontStyle.Normal,
+            fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.Normal,
+        )
     }
 }
