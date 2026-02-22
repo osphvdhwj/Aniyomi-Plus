@@ -576,6 +576,7 @@ fun PlayerControls(
 
         val sheetShown by viewModel.sheetShown.collectAsState()
         val anime by viewModel.currentAnime.collectAsState()
+        val currentShader by viewModel.currentShader.collectAsState()
         val dismissSheet by viewModel.dismissSheet.collectAsState()
         val subtitles by viewModel.subtitleTracks.collectAsState()
         val selectedSubtitles by viewModel.selectedSubtitles.collectAsState()
@@ -594,6 +595,10 @@ fun PlayerControls(
         val emptyHosters by playerPreferences.showEmptyHosters().collectAsState()
 
         PlayerSheets(
+            currentShader = currentShader,
+            onSelectShader = viewModel::applyShader,
+            onClearShaders = viewModel::clearShaders,
+            onOpenShadersSheet = { viewModel.showSheet(Sheets.Shaders) },
             sheetShown = sheetShown,
             subtitles = subtitles.toImmutableList(),
             selectedSubtitles = selectedSubtitles.toList().toImmutableList(),

@@ -81,6 +81,8 @@ import eu.kanade.tachiyomi.ui.player.settings.GesturePreferences
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import eu.kanade.tachiyomi.ui.player.utils.AniSkipApi
 import eu.kanade.tachiyomi.ui.player.utils.ChapterUtils.Companion.getStringRes
+import eu.kanade.tachiyomi.ui.player.utils.ShaderPreset
+import eu.kanade.tachiyomi.ui.player.utils.ShaderUtils
 import eu.kanade.tachiyomi.ui.player.utils.TrackSelect
 import eu.kanade.tachiyomi.ui.reader.SaveImageNotifier
 import eu.kanade.tachiyomi.util.editBackground
@@ -422,7 +424,9 @@ class PlayerViewModel @JvmOverloads constructor(
     }
     // --- SPEED HOLD FEATURE END ---
 
+    val currentShader = MutableStateFlow<ShaderPreset?>(null)
     init {
+        viewModelScope.launchIO { ShaderUtils.copyShadersIfNeeded(Injekt.get<Application>()) }
         viewModelScope.launchIO {
             try {
                 val buttons = getCustomButtons.getAll()
@@ -2184,6 +2188,20 @@ fun CustomButton.execute() {
 
 fun CustomButton.executeLongPress() {
     MPVLib.command(arrayOf("script-message", "call_button_${id}_long"))
+    fun applyShader(preset: ShaderPreset) {
+        val context = Injekt.get<Application>()
+        MPVLib.command(arrayOf("change-list", "glsl-shaders", "clr", ""))
+        preset.shaders.forEach { shader ->
+            val path = ShaderUtils.getShaderPath(context, shader)
+            MPVLib.command(arrayOf("change-list", "glsl-shaders", "append", path))
+        }
+        currentShader.value = preset
+    }
+
+    fun clearShaders() {
+        MPVLib.command(arrayOf("change-list", "glsl-shaders", "clr", ""))
+        currentShader.value = null
+    }
 }
 
 fun Float.normalize(inMin: Float, inMax: Float, outMin: Float, outMax: Float): Float {

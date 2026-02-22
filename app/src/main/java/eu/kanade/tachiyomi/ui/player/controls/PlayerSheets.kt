@@ -34,7 +34,9 @@ import eu.kanade.tachiyomi.ui.player.controls.components.sheets.MoreSheet
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.PlaybackSpeedSheet
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.QualitySheet
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.ScreenshotSheet
+import eu.kanade.tachiyomi.ui.player.controls.components.sheets.ShadersSheet
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.SubtitlesSheet
+import eu.kanade.tachiyomi.ui.player.utils.ShaderPreset
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import tachiyomi.domain.custombuttons.model.CustomButton
@@ -96,6 +98,10 @@ fun PlayerSheets(
     onDismissScreenshot: () -> Unit,
 
     onOpenPanel: (Panels) -> Unit,
+    currentShader: ShaderPreset?,
+    onSelectShader: (ShaderPreset) -> Unit,
+    onClearShaders: () -> Unit,
+    onOpenShadersSheet: () -> Unit,
     onDismissRequest: () -> Unit,
     dismissSheet: Boolean,
 ) {
@@ -171,6 +177,7 @@ fun PlayerSheets(
                 onDismissRequest = onDismissRequest,
                 onEnterFiltersPanel = { onOpenPanel(Panels.VideoFilters) },
                 customButtons = buttons,
+                onEnterShadersSheet = onOpenShadersSheet,
             )
         }
 
@@ -194,6 +201,16 @@ fun PlayerSheets(
                 onSave = onSave,
                 takeScreenshot = takeScreenshot,
                 onDismissRequest = onDismissScreenshot,
+            )
+        }
+
+        Sheets.Shaders -> {
+            ShadersSheet(
+                selectedShader = currentShader,
+                onSelectShader = onSelectShader,
+                onClearShaders = onClearShaders,
+                onDismissRequest = onDismissRequest,
+                dismissSheet = dismissSheet,
             )
         }
     }
