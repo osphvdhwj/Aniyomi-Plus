@@ -36,6 +36,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
@@ -83,6 +84,7 @@ fun BottomLeftPlayerControls(
         merged.distinct()
     }
     var showSpeedPresets by remember { mutableStateOf(false) }
+    val density = LocalDensity.current
 
     fun applySpeed(speed: Float, closeSheet: Boolean = false) {
         onPlaybackSpeedChange(speed)
@@ -132,7 +134,7 @@ fun BottomLeftPlayerControls(
                         },
                         onDragEnd = {
                             isDraggingSpeed = false
-                            val itemHeightPx = 40.dp.toPx()
+                            val itemHeightPx = with(density) { 40.dp.toPx() }
                             val steps = -(dragOffset / itemHeightPx).roundToInt()
                             val newIndex = (currentSpeedIndex + steps).coerceIn(0, overlaySpeeds.lastIndex)
                             applySpeed(overlaySpeeds[newIndex])
@@ -140,8 +142,7 @@ fun BottomLeftPlayerControls(
                         onDragCancel = {
                             isDraggingSpeed = false
                         },
-                        onDrag = { change, dragAmount ->
-                            change.consume()
+                        onVerticalDrag = { _, dragAmount ->
                             dragOffset += dragAmount
                         },
                     )
@@ -149,7 +150,7 @@ fun BottomLeftPlayerControls(
             )
 
             if (isDraggingSpeed) {
-                val itemHeightPx = 40.dp.toPx()
+                val itemHeightPx = with(density) { 40.dp.toPx() }
                 val normalizedOffset = -(dragOffset / itemHeightPx)
 
                 Popup(
