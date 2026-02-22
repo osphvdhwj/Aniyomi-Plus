@@ -613,6 +613,7 @@ fun PlayerControls(
             displayHosters = Pair(showFailedHosters, emptyHosters),
 
             chapter = currentChapter?.toSegment(),
+            animeCoverUrl = anime?.thumbnailUrl,
             chapters = chapters.map { it.toSegment() }.toImmutableList(),
             onSeekToChapter = {
                 viewModel.selectChapter(it)
