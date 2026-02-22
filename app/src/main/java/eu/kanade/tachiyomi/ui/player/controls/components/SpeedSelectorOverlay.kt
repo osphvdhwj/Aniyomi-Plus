@@ -94,12 +94,12 @@ fun BoxScope.SpeedItem(
     Box(
         modifier = Modifier
             .size(80.dp, 50.dp)
+            .zIndex(zIndex)
             .graphicsLayer {
                 this.translationY = translateY.toPx()
                 this.scaleX = scale
                 this.scaleY = scale
                 this.alpha = alpha
-                this.zIndex = zIndex
 
                 // Optional: 3D rotation for more "depth"
                 // rotationX = -distanceFromCenter * 5f
