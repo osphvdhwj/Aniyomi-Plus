@@ -128,6 +128,7 @@ import tachiyomi.domain.history.anime.interactor.UpsertAnimeHistory
 import tachiyomi.domain.history.anime.model.AnimeHistoryUpdate
 import tachiyomi.domain.items.episode.interactor.GetEpisodesByAnimeId
 import tachiyomi.domain.items.episode.interactor.UpdateEpisode
+import tachiyomi.domain.items.episode.model.Episode
 import tachiyomi.domain.items.episode.model.EpisodeUpdate
 import tachiyomi.domain.items.episode.service.getEpisodeSort
 import tachiyomi.domain.library.service.LibraryPreferences
@@ -425,6 +426,7 @@ class PlayerViewModel @JvmOverloads constructor(
     // --- SPEED HOLD FEATURE END ---
 
     val currentShader = MutableStateFlow<ShaderPreset?>(null)
+    val isExternalVideo = MutableStateFlow(false)
     init {
         viewModelScope.launchIO { ShaderUtils.copyShadersIfNeeded(Injekt.get<Application>()) }
         viewModelScope.launchIO {
@@ -2201,6 +2203,30 @@ fun CustomButton.executeLongPress() {
     fun clearShaders() {
         MPVLib.command(arrayOf("change-list", "glsl-shaders", "clr", ""))
         currentShader.value = null
+    }
+
+    fun initExternal(uri: Uri) {
+        isExternalVideo.value = true
+
+        val dummyAnime = Anime.create().copy(
+            title = uri.lastPathSegment ?: "External Video",
+            url = uri.toString(),
+            initialized = true,
+        )
+
+        val dummyEpisode = Episode.create().copy(
+            name = "External",
+            url = uri.toString(),
+            animeId = dummyAnime.id,
+        )
+
+        val video = Video(uri.toString(), "External", uri.toString(), uri)
+
+        _currentAnime.value = dummyAnime
+        _currentEpisode.value = dummyEpisode
+        _currentVideo.value = video
+
+        isLoadingEpisode.value = false
     }
 }
 

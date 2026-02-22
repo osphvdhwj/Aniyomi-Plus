@@ -188,6 +188,7 @@ class PlayerActivity : BaseActivity() {
 
     @SuppressLint("MissingSuperCall")
     override fun onNewIntent(intent: Intent) {
+        handleIntent(intent)
         super.onNewIntent(intent)
 
         val animeId = intent.extras?.getLong("animeId") ?: -1
@@ -242,6 +243,7 @@ class PlayerActivity : BaseActivity() {
         registerSecureActivity(this)
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
+        handleIntent(intent)
 
         setupPlayerMPV()
         setupPlayerAudio()
@@ -1464,6 +1466,16 @@ class PlayerActivity : BaseActivity() {
                 }
             } catch (e: Exception) {
                 logcat(LogPriority.ERROR) { "Error updating Discord RPC: ${e.message}" }
+            }
+        }
+    }
+
+    private fun handleIntent(intent: Intent?) {
+        if (intent == null) return
+        if (intent.action == Intent.ACTION_VIEW) {
+            val data = intent.data
+            if (data != null) {
+                viewModel.initExternal(data)
             }
         }
     }
