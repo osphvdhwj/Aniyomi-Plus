@@ -110,7 +110,7 @@ fun BottomLeftPlayerControls(
 
         // Speed Control with Drag Gesture
         val overlaySpeeds = remember(dragSpeeds, playbackSpeed) {
-             (dragSpeeds + playbackSpeed).map { it.normalizeSpeed() }.distinct().sorted()
+            (dragSpeeds + playbackSpeed).map { it.normalizeSpeed() }.distinct().sorted()
         }
         val currentSpeedIndex = overlaySpeeds.indexOfFirst { abs(it - playbackSpeed) < 0.01f }.coerceAtLeast(0)
 
@@ -145,7 +145,7 @@ fun BottomLeftPlayerControls(
                             dragOffset += dragAmount
                         },
                     )
-                }
+                },
             )
 
             if (isDraggingSpeed) {

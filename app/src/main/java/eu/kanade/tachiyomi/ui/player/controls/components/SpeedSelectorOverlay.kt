@@ -19,7 +19,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlin.math.abs
-import kotlin.math.roundToInt
 
 @Composable
 fun SpeedSelectorOverlay(
@@ -44,7 +43,7 @@ fun SpeedSelectorOverlay(
 
     Box(
         modifier = modifier.size(120.dp, 300.dp),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         speeds.forEachIndexed { index, speed ->
             // Calculate how far this item is from the "center" of the view.
@@ -56,7 +55,7 @@ fun SpeedSelectorOverlay(
             if (distanceFromCenter in -5f..5f) {
                 SpeedItem(
                     speed = speed,
-                    distanceFromCenter = distanceFromCenter
+                    distanceFromCenter = distanceFromCenter,
                 )
             }
         }
@@ -106,21 +105,27 @@ fun BoxScope.SpeedItem(
             }
             .background(
                 color = Color.Black.copy(alpha = 0.7f),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(12.dp),
             )
             .border(
                 width = 2.dp,
-                color = if (absDistance < 0.5f) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                shape = RoundedCornerShape(12.dp)
+                color = if (absDistance <
+                    0.5f
+                ) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                },
+                shape = RoundedCornerShape(12.dp),
             )
             .clip(RoundedCornerShape(12.dp)),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         Text(
             text = "${speed.prettySpeed()}x",
             color = Color.White,
             fontWeight = FontWeight.Bold,
-            fontSize = 16.sp
+            fontSize = 16.sp,
         )
     }
 }
