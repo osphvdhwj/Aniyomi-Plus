@@ -20,23 +20,31 @@ package eu.kanade.tachiyomi.ui.player.controls
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.ScreenRotation
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Popup
 import dev.vivvvek.seeker.Segment
 import eu.kanade.tachiyomi.ui.player.Sheets
 import eu.kanade.tachiyomi.ui.player.controls.components.ControlsButton
 import eu.kanade.tachiyomi.ui.player.controls.components.CurrentChapter
+import eu.kanade.tachiyomi.ui.player.controls.components.SpeedSelectorOverlay
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.i18n.stringResource
@@ -73,9 +81,10 @@ fun BottomLeftPlayerControls(
         } else {
             recent + sortedPresets
         }
-        merged.distinct().take(12)
+        merged.distinct()
     }
     var showSpeedPresets by remember { mutableStateOf(false) }
+    val density = LocalDensity.current
 
     fun applySpeed(speed: Float, closeSheet: Boolean = false) {
         onPlaybackSpeedChange(speed)
@@ -100,15 +109,63 @@ fun BottomLeftPlayerControls(
             icon = Icons.Default.ScreenRotation,
             onClick = onCycleRotation,
         )
-        ControlsButton(
-            text = stringResource(AYMR.strings.player_speed, playbackSpeed),
-            onClick = {
-                val newSpeed = if (playbackSpeed >= 2) 0.25f else playbackSpeed + 0.25f
-                onPlaybackSpeedChange(newSpeed)
-                playerPreferences.playerSpeed().set(newSpeed)
-            },
-            onLongClick = { onOpenSheet(Sheets.PlaybackSpeed) },
-        )
+
+        // Speed Control with Drag Gesture
+        val overlaySpeeds = remember(dragSpeeds, playbackSpeed) {
+            (dragSpeeds + playbackSpeed).map { it.normalizeSpeed() }.distinct().sorted()
+        }
+        val currentSpeedIndex = overlaySpeeds.indexOfFirst { abs(it - playbackSpeed) < 0.01f }.coerceAtLeast(0)
+
+        var isDraggingSpeed by remember { mutableStateOf(false) }
+        var dragOffset by remember { mutableFloatStateOf(0f) }
+
+        Box(
+            contentAlignment = Alignment.Center,
+        ) {
+            ControlsButton(
+                text = stringResource(AYMR.strings.player_speed, playbackSpeed),
+                onClick = { onOpenSheet(Sheets.PlaybackSpeed) },
+                onLongClick = {}, // Disable default long click behavior
+                modifier = Modifier.pointerInput(Unit) {
+                    detectVerticalDragGestures(
+                        onDragStart = {
+                            isDraggingSpeed = true
+                            dragOffset = 0f
+                        },
+                        onDragEnd = {
+                            isDraggingSpeed = false
+                            val itemHeightPx = with(density) { 40.dp.toPx() }
+                            val steps = -(dragOffset / itemHeightPx).roundToInt()
+                            val newIndex = (currentSpeedIndex + steps).coerceIn(0, overlaySpeeds.lastIndex)
+                            applySpeed(overlaySpeeds[newIndex])
+                        },
+                        onDragCancel = {
+                            isDraggingSpeed = false
+                        },
+                        onVerticalDrag = { _, dragAmount ->
+                            dragOffset += dragAmount
+                        },
+                    )
+                },
+            )
+
+            if (isDraggingSpeed) {
+                val itemHeightPx = with(density) { 40.dp.toPx() }
+                val normalizedOffset = -(dragOffset / itemHeightPx)
+
+                Popup(
+                    alignment = Alignment.BottomCenter,
+                    offset = IntOffset(0, -100),
+                ) {
+                    SpeedSelectorOverlay(
+                        speeds = overlaySpeeds,
+                        currentSpeed = playbackSpeed,
+                        dragOffset = normalizedOffset,
+                    )
+                }
+            }
+        }
+
         AnimatedVisibility(
             currentChapter != null && playerPreferences.showCurrentChapter().get(),
             enter = fadeIn(),
