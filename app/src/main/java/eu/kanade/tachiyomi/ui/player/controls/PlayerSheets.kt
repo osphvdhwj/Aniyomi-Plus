@@ -30,14 +30,18 @@ import eu.kanade.tachiyomi.ui.player.Sheets
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.AudioTracksSheet
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.ChaptersSheet
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.HosterState
+import eu.kanade.tachiyomi.ui.player.controls.components.sheets.IdentifyAnimeSheet
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.MoreSheet
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.PlaybackSpeedSheet
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.QualitySheet
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.ScreenshotSheet
+import eu.kanade.tachiyomi.ui.player.controls.components.sheets.ShadersSheet
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.SubtitlesSheet
+import eu.kanade.tachiyomi.ui.player.utils.ShaderPreset
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import tachiyomi.domain.custombuttons.model.CustomButton
+import tachiyomi.domain.entries.anime.model.Anime
 import java.io.InputStream
 
 @Composable
@@ -67,6 +71,7 @@ fun PlayerSheets(
 
     // chapters sheet
     chapter: Segment?,
+    animeCoverUrl: String? = null,
     chapters: ImmutableList<Segment>,
     onSeekToChapter: (Int) -> Unit,
 
@@ -95,6 +100,15 @@ fun PlayerSheets(
     onDismissScreenshot: () -> Unit,
 
     onOpenPanel: (Panels) -> Unit,
+    currentShader: ShaderPreset?,
+    onSelectShader: (ShaderPreset) -> Unit,
+    onClearShaders: () -> Unit,
+    onOpenShadersSheet: () -> Unit,
+    librarySearchResults: List<Anime>,
+    onSearchLibrary: (String) -> Unit,
+    onSelectAnime: (Anime) -> Unit,
+    onOpenIdentifySheet: () -> Unit,
+    isExternalVideo: Boolean,
     onDismissRequest: () -> Unit,
     dismissSheet: Boolean,
 ) {
@@ -152,6 +166,7 @@ fun PlayerSheets(
         Sheets.Chapters -> {
             if (chapter == null) return
             ChaptersSheet(
+                coverUrl = animeCoverUrl,
                 chapters = chapters,
                 currentChapter = chapter,
                 onClick = { onSeekToChapter(chapters.indexOf(it)) },
@@ -169,6 +184,9 @@ fun PlayerSheets(
                 onDismissRequest = onDismissRequest,
                 onEnterFiltersPanel = { onOpenPanel(Panels.VideoFilters) },
                 customButtons = buttons,
+                onEnterShadersSheet = onOpenShadersSheet,
+                isExternalVideo = isExternalVideo,
+                onOpenIdentifySheet = onOpenIdentifySheet,
             )
         }
 
@@ -192,6 +210,26 @@ fun PlayerSheets(
                 onSave = onSave,
                 takeScreenshot = takeScreenshot,
                 onDismissRequest = onDismissScreenshot,
+            )
+        }
+
+        Sheets.Shaders -> {
+            ShadersSheet(
+                selectedShader = currentShader,
+                onSelectShader = onSelectShader,
+                onClearShaders = onClearShaders,
+                onDismissRequest = onDismissRequest,
+                dismissSheet = dismissSheet,
+            )
+        }
+
+        Sheets.IdentifyAnime -> {
+            IdentifyAnimeSheet(
+                searchResults = librarySearchResults,
+                onSearch = onSearchLibrary,
+                onAnimeSelected = onSelectAnime,
+                onDismissRequest = onDismissRequest,
+                dismissSheet = dismissSheet,
             )
         }
     }

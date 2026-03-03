@@ -1,3 +1,20 @@
+/*
+ * Copyright 2024 Abdallah Mehiz
+ * https://github.com/abdallahmehiz/mpvKt
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 /**
  * Code is a mix between PlayerViewModel from mpvKt and the former
  * PlayerViewModel from Aniyomi.
@@ -64,6 +81,8 @@ import eu.kanade.tachiyomi.ui.player.settings.GesturePreferences
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import eu.kanade.tachiyomi.ui.player.utils.AniSkipApi
 import eu.kanade.tachiyomi.ui.player.utils.ChapterUtils.Companion.getStringRes
+import eu.kanade.tachiyomi.ui.player.utils.ShaderPreset
+import eu.kanade.tachiyomi.ui.player.utils.ShaderUtils
 import eu.kanade.tachiyomi.ui.player.utils.TrackSelect
 import eu.kanade.tachiyomi.ui.reader.SaveImageNotifier
 import eu.kanade.tachiyomi.util.editBackground
@@ -109,8 +128,8 @@ import tachiyomi.domain.history.anime.interactor.UpsertAnimeHistory
 import tachiyomi.domain.history.anime.model.AnimeHistoryUpdate
 import tachiyomi.domain.items.episode.interactor.GetEpisodesByAnimeId
 import tachiyomi.domain.items.episode.interactor.UpdateEpisode
-import tachiyomi.domain.items.episode.model.EpisodeUpdate
 import tachiyomi.domain.items.episode.service.getEpisodeSort
+import tachiyomi.domain.library.anime.interactor.GetLibraryAnime
 import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
 import tachiyomi.domain.track.anime.interactor.GetAnimeTracks
@@ -124,6 +143,7 @@ import java.io.InputStream
 import java.util.Date
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.cancellation.CancellationException
+import tachiyomi.domain.items.episode.model.Episode as DomainEpisode
 
 class PlayerViewModelProviderFactory(
     private val activity: PlayerActivity,
@@ -157,6 +177,7 @@ class PlayerViewModel @JvmOverloads constructor(
     private val trackSelect: TrackSelect = Injekt.get(),
     private val getIncognitoState: GetAnimeIncognitoState = Injekt.get(),
     private val libraryPreferences: LibraryPreferences = Injekt.get(),
+    private val getLibraryAnime: GetLibraryAnime = Injekt.get(),
     uiPreferences: UiPreferences = Injekt.get(),
 ) : ViewModel() {
 
@@ -405,12 +426,18 @@ class PlayerViewModel @JvmOverloads constructor(
     }
     // --- SPEED HOLD FEATURE END ---
 
+    val currentShader = MutableStateFlow<ShaderPreset?>(null)
+    val isExternalVideo = MutableStateFlow(false)
+    val librarySearchResults = MutableStateFlow<List<Anime>>(emptyList())
     init {
+        viewModelScope.launchIO { ShaderUtils.copyShadersIfNeeded(Injekt.get<Application>()) }
         viewModelScope.launchIO {
             try {
                 val buttons = getCustomButtons.getAll()
                 buttons.firstOrNull { it.isFavorite }?.let {
                     _primaryButton.update { _ -> it }
+                    // If the button text is not empty, it has been set buy a lua script in which
+                    // case we don't want to override it
                     if (_primaryButtonTitle.value.isEmpty()) {
                         setPrimaryCustomButtonTitle(it)
                     }
@@ -1768,6 +1795,7 @@ class PlayerViewModel @JvmOverloads constructor(
      * If incognito mode isn't on or has at least 1 tracker
      */
     private suspend fun saveEpisodeProgress(episode: Episode) {
+        if (isExternalVideo.value) return
         if (!incognitoMode || hasTrackers) {
             updateEpisode.await(
                 EpisodeUpdate(
@@ -1786,6 +1814,7 @@ class PlayerViewModel @JvmOverloads constructor(
      * Saves this [episode] last seen history if incognito mode isn't on.
      */
     private suspend fun saveEpisodeHistory(episode: Episode) {
+        if (isExternalVideo.value) return
         if (!incognitoMode) {
             val episodeId = episode.id!!
             val seenAt = Date()
@@ -2156,6 +2185,77 @@ class PlayerViewModel @JvmOverloads constructor(
         data class SetArtResult(val result: SetAsArt, val artType: ArtType) : Event()
         data class SavedImage(val result: SaveImageResult) : Event()
         data class ShareImage(val uri: Uri, val seconds: String) : Event()
+    }
+    fun applyShader(preset: ShaderPreset) {
+        val context = Injekt.get<Application>()
+        MPVLib.command(arrayOf("change-list", "glsl-shaders", "clr", ""))
+        preset.shaders.forEach { shader ->
+            val path = ShaderUtils.getShaderPath(context, shader)
+            MPVLib.command(arrayOf("change-list", "glsl-shaders", "append", path))
+        }
+        currentShader.value = preset
+    }
+
+    fun clearShaders() {
+        MPVLib.command(arrayOf("change-list", "glsl-shaders", "clr", ""))
+        currentShader.value = null
+    }
+
+    fun initExternal(uri: Uri) {
+        isExternalVideo.value = true
+
+        val dummyAnime = Anime.create().copy(
+            title = uri.lastPathSegment ?: "External Video",
+            url = uri.toString(),
+            initialized = true,
+        )
+
+        val dummyEpisode = DomainEpisode.create().copy(
+            name = "External",
+            url = uri.toString(),
+            animeId = dummyAnime.id,
+        ).toDbEpisode()
+
+        val video = Video(uri.toString(), "External", uri.toString(), uri)
+
+        _currentAnime.value = dummyAnime
+        _currentEpisode.value = dummyEpisode
+        _currentVideo.value = video
+
+        isLoadingEpisode.value = false
+    }
+
+    fun searchLibrary(query: String) {
+        viewModelScope.launchIO {
+            val library = getLibraryAnime.await()
+            if (query.isBlank()) {
+                librarySearchResults.value = library
+            } else {
+                librarySearchResults.value = library.filter { it.title.contains(query, ignoreCase = true) }
+            }
+        }
+    }
+
+    fun selectAnimeForLink(anime: Anime) {
+        viewModelScope.launchIO {
+            val episodes = getEpisodesByAnimeId.await(anime.id)
+            val sorted = getEpisodeSort.sort(episodes, anime).map { it.toDbEpisode() }
+            _currentPlaylist.value = sorted
+            _currentAnime.value = anime
+            withUIContext {
+                showDialog(Dialogs.EpisodeList)
+            }
+        }
+    }
+
+    fun linkToEpisode(episodeId: Long) {
+        viewModelScope.launchIO {
+            val episode = currentPlaylist.value.find { it.id == episodeId } ?: return@launchIO
+            val anime = currentAnime.value ?: return@launchIO
+
+            _currentEpisode.value = episode
+            isExternalVideo.value = false
+        }
     }
 }
 

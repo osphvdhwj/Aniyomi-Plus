@@ -126,19 +126,18 @@ data class BackupOptions(
         )
 
         fun fromBooleanArray(array: BooleanArray) = BackupOptions(
-            libraryEntries = array.getOrElse(0) { true },
-            categories = array.getOrElse(1) { true },
-            chapters = array.getOrElse(2) { true },
-            tracking = array.getOrElse(3) { true },
-            history = array.getOrElse(4) { true },
-            customInfo = array.getOrElse(5) { true },
-            readEntries = array.getOrElse(6) { true },
-            appSettings = array.getOrElse(7) { true },
-            extensionRepoSettings = array.getOrElse(8) { true },
-            customButton = array.getOrElse(9) { true },
-            sourceSettings = array.getOrElse(10) { true },
-            privateSettings = array.getOrElse(11) { false },
-            extensions = array.getOrElse(12) { false },
+            libraryEntries = array[0],
+            categories = array[1],
+            chapters = array[2],
+            tracking = array[3],
+            history = array[4],
+            readEntries = array[5],
+            appSettings = array[6],
+            extensionRepoSettings = array[7],
+            customButton = array[8],
+            sourceSettings = array[9],
+            privateSettings = array[10],
+            extensions = array[11],
         )
     }
 

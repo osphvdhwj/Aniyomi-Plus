@@ -105,6 +105,8 @@ enum class Sheets {
     Chapters,
     More,
     Screenshot,
+    Shaders,
+    IdentifyAnime,
 }
 
 enum class Panels {

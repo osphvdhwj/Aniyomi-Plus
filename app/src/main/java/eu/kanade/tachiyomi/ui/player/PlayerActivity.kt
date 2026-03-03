@@ -1,3 +1,20 @@
+/*
+ * Copyright 2024 Abdallah Mehiz
+ * https://github.com/abdallahmehiz/mpvKt
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 /**
  * Code is a mix between PlayerActivity from mpvKt and the former
  * PlayerActivity from Aniyomi.
@@ -171,6 +188,7 @@ class PlayerActivity : BaseActivity() {
 
     @SuppressLint("MissingSuperCall")
     override fun onNewIntent(intent: Intent) {
+        handleIntent(intent)
         super.onNewIntent(intent)
 
         val animeId = intent.extras?.getLong("animeId") ?: -1
@@ -225,6 +243,7 @@ class PlayerActivity : BaseActivity() {
         registerSecureActivity(this)
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
+        handleIntent(intent)
 
         setupPlayerMPV()
         setupPlayerAudio()
@@ -1447,6 +1466,16 @@ class PlayerActivity : BaseActivity() {
                 }
             } catch (e: Exception) {
                 logcat(LogPriority.ERROR) { "Error updating Discord RPC: ${e.message}" }
+            }
+        }
+    }
+
+    private fun handleIntent(intent: Intent?) {
+        if (intent == null) return
+        if (intent.action == Intent.ACTION_VIEW) {
+            val data = intent.data
+            if (data != null) {
+                viewModel.initExternal(data)
             }
         }
     }

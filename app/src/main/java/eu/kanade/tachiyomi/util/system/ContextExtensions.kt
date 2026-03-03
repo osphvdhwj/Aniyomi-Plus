@@ -183,13 +183,6 @@ val Context.hasMiuiPackageInstaller get() = isPackageInstalled("com.miui.package
 
 val Context.isShizukuInstalled get() = isPackageInstalled("moe.shizuku.privileged.api") || Sui.isSui()
 
-val Context.isRootAvailable: Boolean
-    get() = try {
-        Runtime.getRuntime().exec(arrayOf("su", "-c", "id")).waitFor() == 0
-    } catch (_: Exception) {
-        false
-    }
-
 fun Context.launchRequestPackageInstallsPermission() {
     Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
         data = "package:$packageName".toUri()
