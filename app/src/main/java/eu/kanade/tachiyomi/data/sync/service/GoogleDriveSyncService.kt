@@ -302,10 +302,14 @@ class GoogleDriveService(private val context: Context) {
     @Suppress("TooGenericExceptionThrown")
     private fun generateAuthorizationUrl(): String {
         val jsonFactory: JsonFactory = JacksonFactory.getDefaultInstance()
-        val secrets = GoogleClientSecrets.load(
-            jsonFactory,
-            context.assets.open("client_secrets.json").reader(),
-        )
+        val secrets = try {
+            GoogleClientSecrets.load(
+                jsonFactory,
+                context.assets.open("client_secrets.json").reader(),
+            )
+        } catch (e: Exception) {
+            throw Exception("Google Drive Sync is not configured: client_secrets.json missing or invalid.")
+        }
 
         val flow = GoogleAuthorizationCodeFlow.Builder(
             NetHttpTransport(),
@@ -335,10 +339,14 @@ class GoogleDriveService(private val context: Context) {
         val refreshToken = syncPreferences.googleDriveRefreshToken().get()
 
         val jsonFactory: JsonFactory = JacksonFactory.getDefaultInstance()
-        val secrets = GoogleClientSecrets.load(
-            jsonFactory,
-            context.assets.open("client_secrets.json").reader(),
-        )
+        val secrets = try {
+            GoogleClientSecrets.load(
+                jsonFactory,
+                context.assets.open("client_secrets.json").reader(),
+            )
+        } catch (e: Exception) {
+            throw Exception("Google Drive Sync is not configured: client_secrets.json missing or invalid.")
+        }
 
         val credential = GoogleCredential.Builder()
             .setJsonFactory(jsonFactory)
@@ -386,10 +394,14 @@ class GoogleDriveService(private val context: Context) {
      */
     private fun setupGoogleDriveService(accessToken: String, refreshToken: String) {
         val jsonFactory: JsonFactory = JacksonFactory.getDefaultInstance()
-        val secrets = GoogleClientSecrets.load(
-            jsonFactory,
-            context.assets.open("client_secrets.json").reader(),
-        )
+        val secrets = try {
+            GoogleClientSecrets.load(
+                jsonFactory,
+                context.assets.open("client_secrets.json").reader(),
+            )
+        } catch (e: Exception) {
+            throw Exception("Google Drive Sync is not configured: client_secrets.json missing or invalid.")
+        }
 
         val credential = GoogleCredential.Builder()
             .setJsonFactory(jsonFactory)
@@ -427,10 +439,14 @@ class GoogleDriveService(private val context: Context) {
         onFailure: (String) -> Unit,
     ) {
         val jsonFactory: JsonFactory = JacksonFactory.getDefaultInstance()
-        val secrets = GoogleClientSecrets.load(
-            jsonFactory,
-            context.assets.open("client_secrets.json").reader(),
-        )
+        val secrets = try {
+            GoogleClientSecrets.load(
+                jsonFactory,
+                context.assets.open("client_secrets.json").reader(),
+            )
+        } catch (e: Exception) {
+            throw Exception("Google Drive Sync is not configured: client_secrets.json missing or invalid.")
+        }
 
         val tokenResponse: GoogleTokenResponse = GoogleAuthorizationCodeTokenRequest(
             NetHttpTransport(),
