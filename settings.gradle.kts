@@ -1,3 +1,8 @@
+gradle.startParameter.let { param ->
+    if (param.taskNames.any { it.contains("ForceDependencyResolutionPlugin") }) {
+        param.isParallelProjectExecutionEnabled = false
+    }
+}
 pluginManagement {
     resolutionStrategy {
         eachPlugin {

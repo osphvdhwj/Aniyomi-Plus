@@ -205,9 +205,7 @@ class PlayerViewModel @JvmOverloads constructor(
 
     private val _isLoadingEpisode = MutableStateFlow(false)
     val isLoadingEpisode = _isLoadingEpisode.asStateFlow()
-    private val _currentDecoder = MutableStateFlow(
-        getDecoderFromValue(MPVLib.getPropertyString("hwdec") ?: "no"),
-    )
+    private val _currentDecoder = MutableStateFlow(Decoder.HWPlus)
     val currentDecoder = _currentDecoder.asStateFlow()
 
     val mediaTitle = MutableStateFlow("")
