@@ -7,6 +7,7 @@ import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadManager
 import eu.kanade.tachiyomi.extension.anime.AnimeExtensionManager
 import eu.kanade.tachiyomi.source.online.HttpSource
+import eu.kanade.tachiyomi.source.online.all.GoogleDriveSource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -62,6 +63,8 @@ class AndroidAnimeSourceManager(
                                 Injekt.get(),
                                 Injekt.get(),
                             ),
+                            // Google Drive Source
+                            9999L to GoogleDriveSource(),
                         ),
                     )
                     extensions.forEach { extension ->

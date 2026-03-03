@@ -5,6 +5,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.automirrored.outlined.Label
 import androidx.compose.material.icons.outlined.CloudOff
+import androidx.compose.material.icons.outlined.CloudUpload
 import androidx.compose.material.icons.outlined.GetApp
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.QueryStats
@@ -136,6 +137,14 @@ fun MoreScreen(
                     title = stringResource(MR.strings.label_stats),
                     icon = Icons.Outlined.QueryStats,
                     onPreferenceClick = onClickStats,
+                )
+            }
+            // Cloud Upload
+            item {
+                TextPreferenceWidget(
+                    title = "Cloud Upload",
+                    icon = Icons.Outlined.CloudUpload,
+                    onPreferenceClick = { /* TODO: Launch Dialog */ },
                 )
             }
             item {
