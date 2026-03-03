@@ -206,7 +206,7 @@ class PlayerViewModel @JvmOverloads constructor(
     private val _isLoadingEpisode = MutableStateFlow(false)
     val isLoadingEpisode = _isLoadingEpisode.asStateFlow()
 
-    private val _currentDecoder = MutableStateFlow(getDecoderFromValue(MPVLib.getPropertyString("hwdec") ?: "no"))
+    private val _currentDecoder = MutableStateFlow(Decoder.HWPlus) // Default decoder, MPV properties aren't initialized yet
     val currentDecoder = _currentDecoder.asStateFlow()
 
     val mediaTitle = MutableStateFlow("")
@@ -282,8 +282,8 @@ class PlayerViewModel @JvmOverloads constructor(
         }.getOrElse { 0f },
     )
     val currentVolume = MutableStateFlow(activity.audioManager.getStreamVolume(AudioManager.STREAM_MUSIC))
-    val currentMPVVolume = MutableStateFlow(MPVLib.getPropertyInt("volume"))
-    var volumeBoostCap: Int = MPVLib.getPropertyInt("volume-max")
+    val currentMPVVolume = MutableStateFlow(100)
+    var volumeBoostCap: Int = 130
 
     // Pair(startingPosition, seekAmount)
     val gestureSeekAmount = MutableStateFlow<Pair<Int, Int>?>(null)
@@ -512,13 +512,13 @@ class PlayerViewModel @JvmOverloads constructor(
     }
     val getTrackMPVId: (Int) -> Int = {
         if (it != -1) {
-            MPVLib.getPropertyInt("track-list/$it/id")
+            (MPVLib.getPropertyInt("track-list/$it/id") ?: 0)
         } else {
             -1
         }
     }
     val getTrackType: (Int) -> String? = {
-        MPVLib.getPropertyString("track-list/$it/type")
+        (MPVLib.getPropertyString("track-list/$it/type") ?: "")
     }
 
     private var trackLoadingJob: Job? = null
@@ -584,10 +584,10 @@ class PlayerViewModel @JvmOverloads constructor(
 
     fun loadChapters() {
         val chapters = mutableListOf<IndexedSegment>()
-        val count = MPVLib.getPropertyInt("chapter-list/count")!!
+        val count = (MPVLib.getPropertyInt("chapter-list/count") ?: 0)
         for (i in 0 until count) {
-            val title = MPVLib.getPropertyString("chapter-list/$i/title")
-            val time = MPVLib.getPropertyInt("chapter-list/$i/time")!!
+            val title = (MPVLib.getPropertyString("chapter-list/$i/title") ?: "")
+            val time = (MPVLib.getPropertyInt("chapter-list/$i/time") ?: 0)
             chapters.add(
                 IndexedSegment(
                     name = title,
@@ -820,7 +820,7 @@ class PlayerViewModel @JvmOverloads constructor(
 
     val maxVolume = activity.audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
     fun changeVolumeBy(change: Int) {
-        val mpvVolume = MPVLib.getPropertyInt("volume")
+        val mpvVolume = (MPVLib.getPropertyInt("volume") ?: 100)
         if (volumeBoostCap > 0 && currentVolume.value == maxVolume) {
             if (mpvVolume == 100 && change < 0) changeVolumeTo(currentVolume.value + change)
             val finalMPVVolume = (mpvVolume + change).coerceAtLeast(100)
@@ -955,7 +955,7 @@ class PlayerViewModel @JvmOverloads constructor(
             }
             "launch_int_picker" -> {
                 val (title, nameFormat, start, stop, step, pickerProperty) = data.split("|")
-                val defaultValue = MPVLib.getPropertyInt(pickerProperty)
+                val defaultValue = (MPVLib.getPropertyInt(pickerProperty) ?: 0)
                 showDialog(
                     Dialogs.IntegerPicker(
                         defaultValue = defaultValue,
@@ -1151,6 +1151,9 @@ class PlayerViewModel @JvmOverloads constructor(
                 downloadManager.addDownloadsToStartOfQueue(listOf(it))
             }
         }
+        currentMPVVolume.value = MPVLib.getPropertyInt("volume") ?: 100
+        volumeBoostCap = MPVLib.getPropertyInt("volume-max") ?: 130
+        _currentDecoder.value = getDecoderFromValue(MPVLib.getPropertyString("hwdec") ?: "no")
     }
 
     fun updateCastProgress(position: Float) {
