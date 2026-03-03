@@ -128,8 +128,9 @@ import tachiyomi.domain.history.anime.interactor.UpsertAnimeHistory
 import tachiyomi.domain.history.anime.model.AnimeHistoryUpdate
 import tachiyomi.domain.items.episode.interactor.GetEpisodesByAnimeId
 import tachiyomi.domain.items.episode.interactor.UpdateEpisode
+import tachiyomi.domain.items.episode.model.EpisodeUpdate
 import tachiyomi.domain.items.episode.service.getEpisodeSort
-import tachiyomi.domain.library.anime.interactor.GetLibraryAnime
+import tachiyomi.domain.entries.anime.interactor.GetLibraryAnime
 import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
 import tachiyomi.domain.track.anime.interactor.GetAnimeTracks
@@ -2205,7 +2206,6 @@ class PlayerViewModel @JvmOverloads constructor(
         isExternalVideo.value = true
 
         val dummyAnime = Anime.create().copy(
-            title = uri.lastPathSegment ?: "External Video",
             url = uri.toString(),
             initialized = true,
         )
@@ -2222,16 +2222,16 @@ class PlayerViewModel @JvmOverloads constructor(
         _currentEpisode.value = dummyEpisode
         _currentVideo.value = video
 
-        isLoadingEpisode.value = false
+        _isLoadingEpisode.value = false
     }
 
     fun searchLibrary(query: String) {
         viewModelScope.launchIO {
             val library = getLibraryAnime.await()
-            if (query.isBlank()) {
-                librarySearchResults.value = library
+            if (query.isNullOrBlank()) {
+                librarySearchResults.value = library.map { it.anime }
             } else {
-                librarySearchResults.value = library.filter { it.title.contains(query, ignoreCase = true) }
+                librarySearchResults.value = library.map { it.anime }.filter { it.title.contains(query, ignoreCase = true) }
             }
         }
     }
@@ -2239,7 +2239,7 @@ class PlayerViewModel @JvmOverloads constructor(
     fun selectAnimeForLink(anime: Anime) {
         viewModelScope.launchIO {
             val episodes = getEpisodesByAnimeId.await(anime.id)
-            val sorted = getEpisodeSort.sort(episodes, anime).map { it.toDbEpisode() }
+            val sorted = episodes.sortedWith(getEpisodeSort(anime)).map { it.toDbEpisode() }
             _currentPlaylist.value = sorted
             _currentAnime.value = anime
             withUIContext {

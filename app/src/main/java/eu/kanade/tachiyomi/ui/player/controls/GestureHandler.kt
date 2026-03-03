@@ -8,6 +8,7 @@
  *
  *      http://www.apache.org/licenses/LICENSE-2.0
  *
+
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -92,17 +93,17 @@ fun GestureHandler(
 
     val seekGesture by gesturePreferences.gestureHorizontalSeek().collectAsState()
     val gestureVolumeBrightness by gesturePreferences.gestureVolumeBrightness().collectAsState()
-    val preciseSeeking by gesturePreferences.preciseSeeking().collectAsState()
+    val playerSmoothSeek by gesturePreferences.playerSmoothSeek().collectAsState()
     val swapVolumeBrightness by gesturePreferences.swapVolumeBrightness().collectAsState()
     val volumeBoostingCap by audioPreferences.volumeBoostCap().collectAsState()
-    val showSeekbar by playerPreferences.showSeekbar().collectAsState()
+    val showSeekbar by gesturePreferences.showSeekBar().collectAsState()
 
     val currentVolume by viewModel.currentVolume.collectAsState()
     val currentMPVVolume by viewModel.currentMPVVolume.collectAsState()
     val currentBrightness by viewModel.currentBrightness.collectAsState()
     val position by viewModel.pos.collectAsState()
     val duration by viewModel.duration.collectAsState()
-    val areControlsLocked by viewModel.controlsLocked.collectAsState()
+    val areControlsLocked by viewModel.areControlsLocked.collectAsState()
 
     var isLongPressing by remember { mutableStateOf(false) }
     var isDoubleTapSeeking by remember { mutableStateOf(false) }
@@ -164,7 +165,7 @@ fun GestureHandler(
                                     .coerceIn(0 - startingPosition, (duration - startingPosition).toInt()),
                             )
                         }
-                        viewModel.seekTo(it.coerceIn(0, duration.toInt()), preciseSeeking)
+                        viewModel.seekTo(it.coerceIn(0, duration.toInt()), playerSmoothSeek)
                     }
 
                     if (showSeekbar) viewModel.showSeekBar()
@@ -410,7 +411,7 @@ suspend fun PointerInputScope.detectZoomGestures(
                 if (pastTouchSlop) {
                     if (event.changes.size > 1) {
                         onZoom(zoomChange, panChange)
-                        event.changes.forEach { if (it.positionChange() != Offset.Zero) it.consume() }
+                        event.changes.forEach { if (it.position != it.previousPosition) it.consume() }
                     }
                 }
             }

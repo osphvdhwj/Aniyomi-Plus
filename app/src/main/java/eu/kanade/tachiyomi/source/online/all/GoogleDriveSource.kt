@@ -3,6 +3,7 @@ package eu.kanade.tachiyomi.source.online.all
 import eu.kanade.tachiyomi.animesource.model.AnimeFilterList
 import eu.kanade.tachiyomi.animesource.model.AnimesPage
 import eu.kanade.tachiyomi.animesource.model.SAnime
+import eu.kanade.tachiyomi.animesource.model.Hoster
 import eu.kanade.tachiyomi.animesource.model.SEpisode
 import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
@@ -64,5 +65,10 @@ class GoogleDriveSource : AnimeHttpSource() {
     override fun searchAnimeParse(response: Response): AnimesPage = AnimesPage(emptyList(), false)
     override fun animeDetailsParse(response: Response): SAnime = SAnime.create()
     override fun episodeListParse(response: Response): List<SEpisode> = emptyList()
+    override fun videoListParse(response: Response, hoster: Hoster): List<Video> = emptyList()
     override fun videoListParse(response: Response): List<Video> = emptyList()
+    override fun episodeVideoParse(response: Response): SEpisode = SEpisode.create()
+    override fun hosterListParse(response: Response): List<Hoster> = emptyList()
+    override fun seasonListParse(response: Response): List<SAnime> = emptyList()
+    override fun videoUrlParse(response: Response): String = ""
 }
