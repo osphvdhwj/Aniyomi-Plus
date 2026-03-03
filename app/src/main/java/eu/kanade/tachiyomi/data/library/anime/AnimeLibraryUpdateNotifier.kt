@@ -164,10 +164,12 @@ class AnimeLibraryUpdateNotifier(
      * Shows notification containing update entries that failed with action to open full log.
      *
      * @param failed Number of entries that failed to update.
+     * @param skipped Number of entries that were skipped.
+     * @param isManual Whether the update was started manually.
      * @param uri Uri for error log file containing all titles that failed.
      */
-    fun showUpdateErrorNotification(failed: Int, uri: Uri) {
-        if (failed == 0) {
+    fun showUpdateErrorNotification(failed: Int, skipped: Int, isManual: Boolean, uri: Uri) {
+        if (failed == 0 && (!isManual || skipped == 0)) {
             return
         }
 
@@ -175,7 +177,12 @@ class AnimeLibraryUpdateNotifier(
             Notifications.ID_LIBRARY_ERROR,
             Notifications.CHANNEL_LIBRARY_ERROR,
         ) {
-            setContentTitle(context.stringResource(MR.strings.notification_update_error, failed))
+            val title = if (failed > 0) {
+                context.stringResource(MR.strings.notification_update_error, failed)
+            } else {
+                context.stringResource(MR.strings.action_update_library)
+            }
+            setContentTitle(title)
             setContentText(context.stringResource(MR.strings.action_show_errors))
             setSmallIcon(R.drawable.ic_ani)
 

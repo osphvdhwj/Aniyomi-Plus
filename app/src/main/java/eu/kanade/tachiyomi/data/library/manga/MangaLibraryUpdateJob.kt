@@ -101,6 +101,8 @@ class MangaLibraryUpdateJob(private val context: Context, workerParams: WorkerPa
 
     private var mangaToUpdate: List<LibraryManga> = mutableListOf()
 
+    private var skippedUpdates: List<Pair<Manga, String?>> = emptyList()
+
     override suspend fun doWork(): Result {
         if (tags.contains(WORK_NAME_AUTO)) {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
@@ -244,7 +246,7 @@ class MangaLibraryUpdateJob(private val context: Context, workerParams: WorkerPa
         }
 
         val restrictions = libraryPreferences.autoUpdateItemRestrictions().get()
-        val skippedUpdates = mutableListOf<Pair<Manga, String?>>()
+        val skippedUpdatesInternal = mutableListOf<Pair<Manga, String?>>()
         val (_, fetchWindowUpperBound) = mangaFetchInterval.getWindow(ZonedDateTime.now())
 
         mangaToUpdate = listToUpdate
@@ -254,35 +256,35 @@ class MangaLibraryUpdateJob(private val context: Context, workerParams: WorkerPa
             .filter {
                 when {
                     it.manga.updateStrategy != UpdateStrategy.ALWAYS_UPDATE -> {
-                        skippedUpdates.add(
+                        skippedUpdatesInternal.add(
                             it.manga to context.stringResource(MR.strings.skipped_reason_not_always_update),
                         )
                         false
                     }
 
                     ENTRY_NON_COMPLETED in restrictions && it.manga.status.toInt() == SManga.COMPLETED -> {
-                        skippedUpdates.add(
+                        skippedUpdatesInternal.add(
                             it.manga to context.stringResource(MR.strings.skipped_reason_completed),
                         )
                         false
                     }
 
                     ENTRY_HAS_UNVIEWED in restrictions && it.unreadCount != 0L -> {
-                        skippedUpdates.add(
+                        skippedUpdatesInternal.add(
                             it.manga to context.stringResource(MR.strings.skipped_reason_not_caught_up),
                         )
                         false
                     }
 
                     ENTRY_NON_VIEWED in restrictions && it.totalChapters > 0L && !it.hasStarted -> {
-                        skippedUpdates.add(
+                        skippedUpdatesInternal.add(
                             it.manga to context.stringResource(MR.strings.skipped_reason_not_started),
                         )
                         false
                     }
 
                     ENTRY_OUTSIDE_RELEASE_PERIOD in restrictions && it.manga.nextUpdate > fetchWindowUpperBound -> {
-                        skippedUpdates.add(
+                        skippedUpdatesInternal.add(
                             it.manga to context.stringResource(MR.strings.skipped_reason_not_in_release_period),
                         )
                         false
@@ -291,6 +293,8 @@ class MangaLibraryUpdateJob(private val context: Context, workerParams: WorkerPa
                 }
             }
             .sortedBy { it.manga.title }
+
+        skippedUpdates = skippedUpdatesInternal
 
         // Warn when excessively checking a single source
         val maxUpdatesFromSource = mangaToUpdate
@@ -302,7 +306,6 @@ class MangaLibraryUpdateJob(private val context: Context, workerParams: WorkerPa
         }
 
         if (skippedUpdates.isNotEmpty()) {
-            // TODO: surface skipped reasons to user?
             logcat {
                 skippedUpdates
                     .groupBy { it.second }
@@ -395,10 +398,12 @@ class MangaLibraryUpdateJob(private val context: Context, workerParams: WorkerPa
             }
         }
 
-        if (failedUpdates.isNotEmpty()) {
-            val errorFile = writeErrorFile(failedUpdates)
+        if (failedUpdates.isNotEmpty() || (skippedUpdates.isNotEmpty() && tags.contains(WORK_NAME_MANUAL))) {
+            val errorFile = writeErrorFile(failedUpdates, skippedUpdates)
             notifier.showUpdateErrorNotification(
                 failedUpdates.size,
+                skippedUpdates.size,
+                tags.contains(WORK_NAME_MANUAL),
                 errorFile.getUriCompat(context),
             )
         }
@@ -465,25 +470,43 @@ class MangaLibraryUpdateJob(private val context: Context, workerParams: WorkerPa
     /**
      * Writes basic file of update errors to cache dir.
      */
-    private fun writeErrorFile(errors: List<Pair<Manga, String?>>): File {
+    private fun writeErrorFile(
+        errors: List<Pair<Manga, String?>>,
+        skipped: List<Pair<Manga, String?>>,
+    ): File {
         try {
-            if (errors.isNotEmpty()) {
+            if (errors.isNotEmpty() || skipped.isNotEmpty()) {
                 val file = context.createFileInCacheDir("animetail_update_errors.txt")
                 file.bufferedWriter().use { out ->
                     out.write(
                         context.stringResource(MR.strings.library_errors_help, ERROR_LOG_HELP_URL) + "\n\n",
                     )
-                    // Error file format:
-                    // ! Error
-                    //   # Source
-                    //     - Manga
-                    errors.groupBy({ it.second }, { it.first }).forEach { (error, mangas) ->
-                        out.write("\n! ${error}\n")
-                        mangas.groupBy { it.source }.forEach { (srcId, mangas) ->
-                            val source = sourceManager.getOrStub(srcId)
-                            out.write("  # $source\n")
-                            mangas.forEach {
-                                out.write("    - ${it.title}\n")
+                    if (errors.isNotEmpty()) {
+                        // Error file format:
+                        // ! Error
+                        //   # Source
+                        //     - Manga
+                        errors.groupBy({ it.second }, { it.first }).forEach { (error, mangas) ->
+                            out.write("\n! ${error}\n")
+                            mangas.groupBy { it.source }.forEach { (srcId, mangas) ->
+                                val source = sourceManager.getOrStub(srcId)
+                                out.write("  # $source\n")
+                                mangas.forEach {
+                                    out.write("    - ${it.title}\n")
+                                }
+                            }
+                        }
+                    }
+                    if (skipped.isNotEmpty()) {
+                        out.write("\n\n" + context.stringResource(MR.strings.label_auto) + "\n")
+                        skipped.groupBy({ it.second }, { it.first }).forEach { (reason, mangas) ->
+                            out.write("\n! ${reason}\n")
+                            mangas.groupBy { it.source }.forEach { (srcId, mangas) ->
+                                val source = sourceManager.getOrStub(srcId)
+                                out.write("  # $source\n")
+                                mangas.forEach {
+                                    out.write("    - ${it.title}\n")
+                                }
                             }
                         }
                     }
