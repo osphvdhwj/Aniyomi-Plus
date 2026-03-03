@@ -135,22 +135,13 @@ jobs:
         uses: gradle/actions/setup-gradle@94baf225fe0a508e581a564467443d0e2379123b # v4.3.0
 
       - name: Check code format
-        run: echo "Skipping spotlessCheck"
+        run: ./gradlew spotlessCheck
 
       - name: Build app
-        run: echo "Skipping assembleRelease"
-
-      - name: Build Debug APK
-        run: ./gradlew assembleDebug
-
-      - name: Upload Debug APK
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: app-debug-${{ github.sha }}
-          path: app/build/outputs/apk/debug/*.apk
+        run: ./gradlew assembleRelease -Penable-updater
 
       - name: Run unit tests
-        run: echo "Skipping testReleaseUnitTest"
+        run: ./gradlew testReleaseUnitTest
 
       - name: Upload APK
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -158,12 +149,12 @@ jobs:
           name: arm64-v8a-${{ github.sha }}
           path: app/build/outputs/apk/release/app-arm64-v8a-release-unsigned.apk
 
-#      - name: Upload mapping
-#        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-#        with:
-#          name: mapping-${{ github.sha }}
-#          path: app/build/outputs/mapping/release
-#
+      - name: Upload mapping
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: mapping-${{ github.sha }}
+          path: app/build/outputs/mapping/release
+
       # Sign APK and create release for tags
 
       - name: Get tag name
