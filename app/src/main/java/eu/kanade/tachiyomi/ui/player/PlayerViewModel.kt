@@ -122,6 +122,7 @@ import tachiyomi.domain.custombuttons.interactor.GetCustomButtons
 import tachiyomi.domain.custombuttons.model.CustomButton
 import tachiyomi.domain.download.service.DownloadPreferences
 import tachiyomi.domain.entries.anime.interactor.GetAnime
+import tachiyomi.domain.entries.anime.interactor.GetLibraryAnime
 import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.domain.history.anime.interactor.GetNextEpisodes
 import tachiyomi.domain.history.anime.interactor.UpsertAnimeHistory
@@ -130,7 +131,6 @@ import tachiyomi.domain.items.episode.interactor.GetEpisodesByAnimeId
 import tachiyomi.domain.items.episode.interactor.UpdateEpisode
 import tachiyomi.domain.items.episode.model.EpisodeUpdate
 import tachiyomi.domain.items.episode.service.getEpisodeSort
-import tachiyomi.domain.entries.anime.interactor.GetLibraryAnime
 import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
 import tachiyomi.domain.track.anime.interactor.GetAnimeTracks
@@ -2231,7 +2231,8 @@ class PlayerViewModel @JvmOverloads constructor(
             if (query.isNullOrBlank()) {
                 librarySearchResults.value = library.map { it.anime }
             } else {
-                librarySearchResults.value = library.map { it.anime }.filter { it.title.contains(query, ignoreCase = true) }
+                librarySearchResults.value =
+                    library.map { it.anime }.filter { it.title.contains(query, ignoreCase = true) }
             }
         }
     }
