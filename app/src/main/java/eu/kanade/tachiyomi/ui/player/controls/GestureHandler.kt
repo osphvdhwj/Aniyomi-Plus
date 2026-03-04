@@ -127,17 +127,28 @@ fun GestureHandler(
                 var originalVolume = 0
                 var originalMPVVolume = 0
                 var originalBrightness = 0f
-
                 detectVerticalDragGestures(
-                    onDragStart = {
-                        startingY = 0f
-                        mpvVolumeStartingY = 0f
-                        originalVolume = currentVolume
-                        originalMPVVolume = currentMPVVolume
-                        originalBrightness = currentBrightness
+                    onDragStart = { offset ->
+                        val screenWidth = size.width
+                        val isLeftEdge = offset.x < screenWidth * 0.3f
+                        val isRightEdge = offset.x > screenWidth * 0.7f
+
+                        if (isLeftEdge || isRightEdge) {
+                            startingY = 0f
+                            mpvVolumeStartingY = 0f
+                            originalVolume = currentVolume
+                            originalMPVVolume = currentMPVVolume
+                            originalBrightness = currentBrightness
+                        }
                     },
                     onDragEnd = { startingY = 0f },
                 ) { change, amount ->
+                    val screenWidth = size.width
+                    val isLeftEdge = change.previousPosition.x < screenWidth * 0.3f
+                    val isRightEdge = change.previousPosition.x > screenWidth * 0.7f
+
+                    if (!isLeftEdge && !isRightEdge) return@detectVerticalDragGestures
+
                     val isIncreasingVolumeBoost = (
                         volumeBoostingCap > 0 &&
                             currentVolume == viewModel.maxVolume &&
@@ -164,7 +175,7 @@ fun GestureHandler(
                                     originalMPVVolume,
                                     mpvVolumeStartingY,
                                     change.position.y,
-                                    0.001f * volumeBoostingCap,
+                                    volumeBoostingCap.toFloat(),
                                 ).coerceIn(100..volumeBoostingCap + 100),
                             )
                         } else {
@@ -178,7 +189,7 @@ fun GestureHandler(
                                     originalVolume,
                                     startingY,
                                     change.position.y,
-                                    0.001f * viewModel.maxVolume,
+                                    viewModel.maxVolume.toFloat(),
                                 ),
                             )
                         }
@@ -192,7 +203,7 @@ fun GestureHandler(
                                 originalBrightness,
                                 startingY,
                                 change.position.y,
-                                0.001f,
+                                1f,
                             ),
                         )
                         viewModel.displayBrightnessSlider()
@@ -231,9 +242,14 @@ fun GestureHandler(
                                 val timeElapsed = System.currentTimeMillis() - downTime
                                 val dx = change.position.x - change.previousPosition.x
                                 totalDragDistanceX += dx
-
                                 // A. Detect Long Press
-                                if (!isLongPress &&
+                                val screenWidth = size.width
+                                val isLeftEdge = down.position.x < screenWidth * 0.3f
+                                val isRightEdge = down.position.x > screenWidth * 0.7f
+                                val isEdge = isLeftEdge || isRightEdge
+
+                                if (!isEdge &&
+                                    !isLongPress &&
                                     !isHorizontalDrag &&
                                     timeElapsed > viewConfiguration.longPressTimeoutMillis
                                 ) {
