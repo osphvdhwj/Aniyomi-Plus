@@ -25,6 +25,7 @@ import eu.kanade.presentation.more.settings.widget.AppThemeModePreferenceWidget
 import eu.kanade.presentation.more.settings.widget.AppThemePreferenceWidget
 import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableMap
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
@@ -282,7 +283,7 @@ object SettingsAppearanceScreen : SearchableSettings {
             stringResource(TLMR.strings.pref_category_navbar),
             preferenceItems = persistentListOf(
                 Preference.PreferenceItem.ListPreference(
-                    pref = uiPreferences.bottomNavStyle(),
+                    preference = uiPreferences.bottomNavStyle(),
                     title = stringResource(AYMR.strings.pref_bottom_nav_style),
                     entries = persistentMapOf(
                         0 to stringResource(AYMR.strings.pref_bottom_nav_style_split),
