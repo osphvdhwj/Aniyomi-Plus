@@ -236,7 +236,13 @@ fun GestureHandler(
                                     if (viewModel.paused.value) {
                                         viewModel.sheetShown.update { Sheets.Screenshot }
                                     } else {
-                                        viewModel.onHoldSpeedStart()
+                                        val isLeftEdge = down.position.x < size.width * 0.3f
+                                        val isRightEdge = down.position.x > size.width * 0.7f
+                                        val isCenter = !isLeftEdge && !isRightEdge
+
+                                        if (isCenter) {
+                                            viewModel.onHoldSpeedStart()
+                                        }
                                     }
                                 }
 
