@@ -110,8 +110,17 @@ object HomeScreen : Screen() {
             castManager.reconnect()
         }
 
+        val bottomNavStyleState by uiPreferences.bottomNavStyle().collectAsState()
+        val actualDefaultTab = remember(bottomNavStyleState, defaultTab) {
+            if (bottomNavStyleState == 1 && (defaultTab == AnimeLibraryTab || defaultTab == MangaLibraryTab)) {
+                eu.kanade.tachiyomi.ui.library.AniMaTab
+            } else {
+                defaultTab
+            }
+        }
+
         TabNavigator(
-            tab = defaultTab,
+            tab = actualDefaultTab,
             key = TAB_NAVIGATOR_KEY,
         ) { tabNavigator ->
             // Provide usable navigator to content screen
@@ -120,7 +129,30 @@ object HomeScreen : Screen() {
                     startBar = {
                         if (isTabletUi()) {
                             NavigationRail {
-                                navStyle.tabs
+                                val bottomNavStyle by uiPreferences.bottomNavStyle().collectAsState()
+                                val actualTabs = remember(navStyle, bottomNavStyle) {
+                                    if (bottomNavStyle == 1) {
+                                        mutableListOf(
+                                            eu.kanade.tachiyomi.ui.library.AniMaTab,
+                                            UpdatesTab,
+                                            HistoriesTab,
+                                            BrowseTab,
+                                            MoreTab,
+                                        ).apply {
+                                            // In merged mode, there is no separate manga tab,
+                                            // so we don't necessarily need to remove the "moreTab" if it's Manga.
+                                            // But to be safe and respect NavStyle logic:
+                                            if (navStyle.moreTab != MangaLibraryTab &&
+                                                navStyle.moreTab != AnimeLibraryTab
+                                            ) {
+                                                remove(navStyle.moreTab)
+                                            }
+                                        }
+                                    } else {
+                                        navStyle.tabs
+                                    }
+                                }
+                                actualTabs
                                     .fastFilter { it.isEnabled() }
                                     .fastForEach {
                                         NavigationRailItem(it, alwaysShowLabel)
@@ -156,7 +188,30 @@ object HomeScreen : Screen() {
                                     exit = shrinkVertically(),
                                 ) {
                                     NavigationBar {
-                                        navStyle.tabs
+                                        val bottomNavStyle by uiPreferences.bottomNavStyle().collectAsState()
+                                        val actualTabs = remember(navStyle, bottomNavStyle) {
+                                            if (bottomNavStyle == 1) {
+                                                mutableListOf(
+                                                    eu.kanade.tachiyomi.ui.library.AniMaTab,
+                                                    UpdatesTab,
+                                                    HistoriesTab,
+                                                    BrowseTab,
+                                                    MoreTab,
+                                                ).apply {
+                                                    // In merged mode, there is no separate manga tab,
+                                                    // so we don't necessarily need to remove the "moreTab" if it's Manga.
+                                                    // But to be safe and respect NavStyle logic:
+                                                    if (navStyle.moreTab != MangaLibraryTab &&
+                                                        navStyle.moreTab != AnimeLibraryTab
+                                                    ) {
+                                                        remove(navStyle.moreTab)
+                                                    }
+                                                }
+                                            } else {
+                                                navStyle.tabs
+                                            }
+                                        }
+                                        actualTabs
                                             .fastFilter { it.isEnabled() }
                                             .fastForEach {
                                                 NavigationBarItem(it, alwaysShowLabel)

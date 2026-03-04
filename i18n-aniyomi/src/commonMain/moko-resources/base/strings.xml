@@ -582,4 +582,7 @@
     <string name="pref_download_fillermarked_items">Allow downloading of fillermarked episodes</string>
     <string name="show_episode_previews">Episode thumbnails</string>
     <string name="show_episode_summaries">Episode summaries</string>
+
+    <string name="pref_bottom_nav_style_split">Split (Anime &amp; Manga)</string>
+    <string name="pref_bottom_nav_style_merged">Merged (AniMa)</string>
 </resources>

@@ -281,6 +281,14 @@ object SettingsAppearanceScreen : SearchableSettings {
         return Preference.PreferenceGroup(
             stringResource(TLMR.strings.pref_category_navbar),
             preferenceItems = persistentListOf(
+                Preference.PreferenceItem.ListPreference(
+                    pref = uiPreferences.bottomNavStyle(),
+                    title = stringResource(AYMR.strings.pref_bottom_nav_style),
+                    entries = persistentMapOf(
+                        0 to stringResource(AYMR.strings.pref_bottom_nav_style_split),
+                        1 to stringResource(AYMR.strings.pref_bottom_nav_style_merged),
+                    ),
+                ),
                 Preference.PreferenceItem.SwitchPreference(
                     preference = uiPreferences.showNavUpdates(),
                     title = stringResource(TLMR.strings.pref_hide_updates_button),

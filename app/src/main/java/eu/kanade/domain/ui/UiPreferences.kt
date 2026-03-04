@@ -61,6 +61,8 @@ class UiPreferences(
 
     fun showCast() = preferenceStore.getBoolean("show_cast", true)
 
+    fun bottomNavStyle() = preferenceStore.getInt("pref_bottom_nav_style", 0)
+
     companion object {
         fun dateFormat(format: String): DateTimeFormatter = when (format) {
             "" -> DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT)
