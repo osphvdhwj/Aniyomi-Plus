@@ -95,7 +95,6 @@ android {
         localeFilters += listOf("en")
     }
 
-
     splits {
         abi {
             isEnable = true
@@ -104,7 +103,6 @@ android {
             isUniversalApk = false
         }
     }
-
 
     packaging {
         jniLibs {
@@ -138,11 +136,10 @@ android {
                     "META-INF/*.kotlin_module",
                     "META-INF/LICENSE*",
                     "META-INF/NOTICE*",
-                    "META-INF/DEPENDENCIES"
+                    "META-INF/DEPENDENCIES",
                 )
             }
         }
-
 
         dependenciesInfo {
             includeInApk = Config.includeDependencyInfo
@@ -162,7 +159,6 @@ android {
         lint {
             abortOnError = false
             checkReleaseBuilds = false
-
         }
     }
 
@@ -356,9 +352,8 @@ android {
     }
 }
 
-
-    buildscript {
-        dependencies {
-            classpath(kotlinx.gradle)
-        }
+buildscript {
+    dependencies {
+        classpath(kotlinx.gradle)
     }
+}
