@@ -40,6 +40,24 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        create("release") {
+            val keystoreFile = System.getenv("KEYSTORE_FILE")
+            if (keystoreFile != null) {
+                storeFile = file(keystoreFile)
+                storePassword = System.getenv("KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("KEY_ALIAS")
+                keyPassword = System.getenv("KEY_PASSWORD")
+            } else {
+                // Dummy values for local builds without secrets
+                storeFile = file("dummy.jks")
+                storePassword = "dummy"
+                keyAlias = "dummy"
+                keyPassword = "dummy"
+            }
+        }
+    }
+
     buildTypes {
         val debug by getting {
             applicationIdSuffix = ".dev"
@@ -47,6 +65,7 @@ android {
             isPseudoLocalesEnabled = true
         }
         val release by getting {
+            signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = Config.enableCodeShrink
             isShrinkResources = Config.enableCodeShrink
 
@@ -95,7 +114,6 @@ android {
         localeFilters += listOf("en")
     }
 
-
     splits {
         abi {
             isEnable = true
@@ -104,7 +122,6 @@ android {
             isUniversalApk = false
         }
     }
-
 
     packaging {
         jniLibs {
@@ -138,11 +155,10 @@ android {
                     "META-INF/*.kotlin_module",
                     "META-INF/LICENSE*",
                     "META-INF/NOTICE*",
-                    "META-INF/DEPENDENCIES"
+                    "META-INF/DEPENDENCIES",
                 )
             }
         }
-
 
         dependenciesInfo {
             includeInApk = Config.includeDependencyInfo
@@ -162,7 +178,6 @@ android {
         lint {
             abortOnError = false
             checkReleaseBuilds = false
-
         }
     }
 
@@ -356,9 +371,8 @@ android {
     }
 }
 
-
-    buildscript {
-        dependencies {
-            classpath(kotlinx.gradle)
-        }
+buildscript {
+    dependencies {
+        classpath(kotlinx.gradle)
     }
+}

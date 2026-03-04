@@ -869,7 +869,7 @@ class PlayerViewModel @JvmOverloads constructor(
             ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE,
             ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE,
             ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE,
-                -> {
+            -> {
                 playerPreferences.defaultPlayerOrientationType().set(PlayerOrientation.SensorPortrait)
                 ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
             }

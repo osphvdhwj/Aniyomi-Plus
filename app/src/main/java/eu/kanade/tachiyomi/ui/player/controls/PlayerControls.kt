@@ -144,7 +144,7 @@ fun PlayerControls(
     if (viewModel.isHoldingSpeed) {
         Box(
             modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.TopCenter
+            contentAlignment = Alignment.TopCenter,
         ) {
             SpeedHoldOverlay(
                 // Use isSpeedListVisible logic
@@ -152,7 +152,7 @@ fun PlayerControls(
                 currentSpeed = viewModel.currentHoldSpeed,
                 availableSpeeds = viewModel.availableHoldSpeeds,
                 selectedIndex = viewModel.highlightedSpeedIndex,
-                modifier = Modifier.padding(top = 48.dp)
+                modifier = Modifier.padding(top = 48.dp),
             )
         }
     }
@@ -210,27 +210,27 @@ fun PlayerControls(
                 AnimatedVisibility(
                     isBrightnessSliderShown,
                     enter =
-                        if (!reduceMotion) {
-                            slideInHorizontally(playerControlsEnterAnimationSpec()) {
-                                if (swapVolumeAndBrightness) -it else it
-                            } +
-                                fadeIn(
-                                    playerControlsEnterAnimationSpec(),
-                                )
-                        } else {
-                            fadeIn(playerControlsEnterAnimationSpec())
-                        },
+                    if (!reduceMotion) {
+                        slideInHorizontally(playerControlsEnterAnimationSpec()) {
+                            if (swapVolumeAndBrightness) -it else it
+                        } +
+                            fadeIn(
+                                playerControlsEnterAnimationSpec(),
+                            )
+                    } else {
+                        fadeIn(playerControlsEnterAnimationSpec())
+                    },
                     exit =
-                        if (!reduceMotion) {
-                            slideOutHorizontally(playerControlsExitAnimationSpec()) {
-                                if (swapVolumeAndBrightness) -it else it
-                            } +
-                                fadeOut(
-                                    playerControlsExitAnimationSpec(),
-                                )
-                        } else {
-                            fadeOut(playerControlsExitAnimationSpec())
-                        },
+                    if (!reduceMotion) {
+                        slideOutHorizontally(playerControlsExitAnimationSpec()) {
+                            if (swapVolumeAndBrightness) -it else it
+                        } +
+                            fadeOut(
+                                playerControlsExitAnimationSpec(),
+                            )
+                    } else {
+                        fadeOut(playerControlsExitAnimationSpec())
+                    },
                     modifier = Modifier.constrainAs(brightnessSlider) {
                         if (swapVolumeAndBrightness) {
                             start.linkTo(parent.start, spacing.medium)
@@ -251,27 +251,27 @@ fun PlayerControls(
                 AnimatedVisibility(
                     isVolumeSliderShown,
                     enter =
-                        if (!reduceMotion) {
-                            slideInHorizontally(playerControlsEnterAnimationSpec()) {
-                                if (swapVolumeAndBrightness) it else -it
-                            } +
-                                fadeIn(
-                                    playerControlsEnterAnimationSpec(),
-                                )
-                        } else {
-                            fadeIn(playerControlsEnterAnimationSpec())
-                        },
+                    if (!reduceMotion) {
+                        slideInHorizontally(playerControlsEnterAnimationSpec()) {
+                            if (swapVolumeAndBrightness) it else -it
+                        } +
+                            fadeIn(
+                                playerControlsEnterAnimationSpec(),
+                            )
+                    } else {
+                        fadeIn(playerControlsEnterAnimationSpec())
+                    },
                     exit =
-                        if (!reduceMotion) {
-                            slideOutHorizontally(playerControlsExitAnimationSpec()) {
-                                if (swapVolumeAndBrightness) it else -it
-                            } +
-                                fadeOut(
-                                    playerControlsExitAnimationSpec(),
-                                )
-                        } else {
-                            fadeOut(playerControlsExitAnimationSpec())
-                        },
+                    if (!reduceMotion) {
+                        slideOutHorizontally(playerControlsExitAnimationSpec()) {
+                            if (swapVolumeAndBrightness) it else -it
+                        } +
+                            fadeOut(
+                                playerControlsExitAnimationSpec(),
+                            )
+                    } else {
+                        fadeOut(playerControlsExitAnimationSpec())
+                    },
                     modifier = Modifier.constrainAs(volumeSlider) {
                         if (swapVolumeAndBrightness) {
                             end.linkTo(parent.end, spacing.medium)
@@ -340,9 +340,9 @@ fun PlayerControls(
                 }
                 AnimatedVisibility(
                     visible =
-                        (controlsShown && !areControlsLocked || gestureSeekAmount != null) ||
-                            isLoading ||
-                            isLoadingEpisode,
+                    (controlsShown && !areControlsLocked || gestureSeekAmount != null) ||
+                        isLoading ||
+                        isLoadingEpisode,
                     enter = fadeIn(playerControlsEnterAnimationSpec()),
                     exit = fadeOut(playerControlsExitAnimationSpec()),
                     modifier = Modifier.constrainAs(centerControls) {
