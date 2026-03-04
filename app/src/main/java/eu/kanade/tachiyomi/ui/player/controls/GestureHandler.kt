@@ -136,17 +136,21 @@ fun GestureHandler(
                         originalMPVVolume = currentMPVVolume
                         originalBrightness = currentBrightness
                     },
-                    onDragEnd = { startingY = 0f }
+                    onDragEnd = { startingY = 0f },
                 ) { change, amount ->
-                    val isIncreasingVolumeBoost = (volumeBoostingCap > 0 &&
-                        currentVolume == viewModel.maxVolume &&
-                        currentMPVVolume - 100 < volumeBoostingCap &&
-                        amount < 0)
+                    val isIncreasingVolumeBoost = (
+                        volumeBoostingCap > 0 &&
+                            currentVolume == viewModel.maxVolume &&
+                            currentMPVVolume - 100 < volumeBoostingCap &&
+                            amount < 0
+                        )
 
-                    val isDecreasingVolumeBoost = (volumeBoostingCap > 0 &&
-                        currentVolume == viewModel.maxVolume &&
-                        currentMPVVolume - 100 in 1..volumeBoostingCap &&
-                        amount > 0)
+                    val isDecreasingVolumeBoost = (
+                        volumeBoostingCap > 0 &&
+                            currentVolume == viewModel.maxVolume &&
+                            currentMPVVolume - 100 in 1..volumeBoostingCap &&
+                            amount > 0
+                        )
 
                     val changeVolume = {
                         if (isIncreasingVolumeBoost || isDecreasingVolumeBoost) {
@@ -229,7 +233,10 @@ fun GestureHandler(
                                 totalDragDistanceX += dx
 
                                 // A. Detect Long Press
-                                if (!isLongPress && !isHorizontalDrag && timeElapsed > viewConfiguration.longPressTimeoutMillis) {
+                                if (!isLongPress &&
+                                    !isHorizontalDrag &&
+                                    timeElapsed > viewConfiguration.longPressTimeoutMillis
+                                ) {
                                     isLongPress = true
                                     haptics.performHapticFeedback(HapticFeedbackType.LongPress)
 
@@ -241,7 +248,10 @@ fun GestureHandler(
                                 }
 
                                 // B. Detect Seek Drag
-                                if (!isLongPress && !isHorizontalDrag && abs(totalDragDistanceX) > viewConfiguration.touchSlop) {
+                                if (!isLongPress &&
+                                    !isHorizontalDrag &&
+                                    abs(totalDragDistanceX) > viewConfiguration.touchSlop
+                                ) {
                                     val dyTotal = abs(change.position.y - down.position.y)
                                     if (abs(totalDragDistanceX) > dyTotal) {
                                         if (seekGesture) {
@@ -259,11 +269,22 @@ fun GestureHandler(
 
                                 // D. Handle Seek Drag
                                 if (isHorizontalDrag) {
-                                    calculateNewHorizontalGestureValue(position.toInt(), down.position.x, change.position.x, 0.15f).let {
+                                    calculateNewHorizontalGestureValue(
+                                        position.toInt(),
+                                        down.position.x,
+                                        change.position.x,
+                                        0.15f,
+                                    ).let {
                                         viewModel.gestureSeekAmount.update { _ ->
                                             Pair(
                                                 position.toInt(),
-                                                (it - position.toInt()).coerceIn(0 - position.toInt(), (duration - position.toInt()).toInt()),
+                                                (it - position.toInt()).coerceIn(
+                                                    0 - position.toInt(),
+                                                    (
+                                                        duration -
+                                                            position.toInt()
+                                                        ).toInt(),
+                                                ),
                                             )
                                         }
                                         viewModel.seekTo(it.coerceIn(0, duration.toInt()), preciseSeeking)
@@ -311,9 +332,9 @@ fun GestureHandler(
                         if (panelShown != Panels.None && !allowGesturesInPanels) {
                             viewModel.panelShown.update { Panels.None }
                         }
-                    }
+                    },
                 )
-            }
+            },
     )
 
     // Ovals for visual feedback
