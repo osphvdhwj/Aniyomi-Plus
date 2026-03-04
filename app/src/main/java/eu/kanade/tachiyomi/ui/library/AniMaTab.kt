@@ -4,11 +4,14 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.updateTransition
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -28,7 +31,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Movie
-import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -37,51 +39,79 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.navigator.tab.TabOptions
 import eu.kanade.presentation.util.Tab
 import eu.kanade.tachiyomi.ui.library.anime.AnimeLibraryTab
 import eu.kanade.tachiyomi.ui.library.manga.MangaLibraryTab
 
+// Global state so the Navigation Bar can react to the Pill changes
+object AniMaState {
+    var isAnimeMode by mutableStateOf(true)
+}
+
 object AniMaTab : Tab {
+
     override val options: TabOptions
         @Composable
-        get() = TabOptions(
-            index = 0u,
-            title = "AniMa",
-            icon = rememberVectorPainter(Icons.Filled.VideoLibrary),
-        )
+        get() {
+            val isAnime = AniMaState.isAnimeMode
+            val title = if (isAnime) "Anime" else "Manga"
+
+            // ANIMATION 1: Morphing the Navigation Bar Icon
+            val moviePainter = rememberVectorPainter(Icons.Filled.Movie)
+            val bookPainter = rememberVectorPainter(Icons.Filled.Book)
+
+            val transition = updateTransition(targetState = isAnime, label = "NavIconMorph")
+            val movieAlpha by transition.animateFloat(label = "MovieAlpha") { if (it) 1f else 0f }
+            val bookAlpha by transition.animateFloat(label = "BookAlpha") { if (it) 0f else 1f }
+
+            val animatedIconPainter = remember(movieAlpha, bookAlpha) {
+                object : Painter() {
+                    override val intrinsicSize = moviePainter.intrinsicSize
+                    override fun DrawScope.onDraw() {
+                        with(moviePainter) { draw(size, alpha = movieAlpha) }
+                        with(bookPainter) { draw(size, alpha = bookAlpha) }
+                    }
+                }
+            }
+
+            return TabOptions(
+                index = 0u,
+                title = title,
+                icon = animatedIconPainter, // Injects the animated crossfade painter directly into the Nav Bar
+            )
+        }
 
     @Composable
     override fun Content() {
-        // rememberSaveable handles RAM/ROM lifecycle optimization naturally
-        var isAnimeMode by rememberSaveable { mutableStateOf(true) }
-        var isPillShrunk by remember { mutableStateOf(false) }
+        var isPillHidden by remember { mutableStateOf(false) }
 
-        // Battery Optimization: Throttle scroll event interceptors
+        // Intercept scrolling to trigger the Pill slide-down animation
         val nestedScrollConnection = remember {
             object : NestedScrollConnection {
                 override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                    // Y < -15 is a downward scroll on the screen (user swiping up)
-                    if (available.y < -15f && !isPillShrunk) {
-                        isPillShrunk = true
-                    } else if (available.y > 15f && isPillShrunk) {
-                        isPillShrunk = false
+                    if (available.y < -15f && !isPillHidden) {
+                        isPillHidden = true
+                    } else if (available.y > 15f && isPillHidden) {
+                        isPillHidden = false
                     }
-                    return Offset.Zero // Don't consume scroll, just read it
+                    return Offset.Zero
                 }
             }
         }
@@ -91,17 +121,38 @@ object AniMaTab : Tab {
                 .fillMaxSize()
                 .nestedScroll(nestedScrollConnection),
         ) {
-            // AnimatedContent ensures the inactive library is unmounted from RAM
-            AnimatedContent(targetState = isAnimeMode, label = "AniMa Switch") { isAnime ->
+            // ANIMATION 2: Content sliding horizontally like a ViewPager
+            AnimatedContent(
+                targetState = AniMaState.isAnimeMode,
+                transitionSpec = {
+                    if (targetState) {
+                        // Manga -> Anime: Slide in from Left
+                        (slideInHorizontally { -it } + fadeIn()) togetherWith
+                            (slideOutHorizontally { it } + fadeOut())
+                    } else {
+                        // Anime -> Manga: Slide in from Right
+                        (slideInHorizontally { it } + fadeIn()) togetherWith
+                            (slideOutHorizontally { -it } + fadeOut())
+                    }
+                },
+                label = "LibraryContentSlide",
+            ) { isAnime ->
                 if (isAnime) AnimeLibraryTab.Content() else MangaLibraryTab.Content()
             }
 
+            // ANIMATION 3: Pill physically slides Up and Down out of view
+            val pillOffsetY by animateDpAsState(
+                targetValue = if (isPillHidden) 120.dp else 0.dp, // 120dp completely removes it from the screen
+                animationSpec = spring(dampingRatio = 0.75f, stiffness = Spring.StiffnessMediumLow),
+                label = "PillSlideVertical",
+            )
+
             AniMaPill(
-                isAnimeMode = isAnimeMode,
-                isShrunk = isPillShrunk,
-                onToggle = { isAnimeMode = !isAnimeMode },
+                isAnimeMode = AniMaState.isAnimeMode,
+                onToggle = { AniMaState.isAnimeMode = !AniMaState.isAnimeMode },
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
+                    .offset(y = pillOffsetY) // Applies the fluid translation
                     .padding(bottom = 16.dp),
             )
         }
@@ -111,60 +162,42 @@ object AniMaTab : Tab {
 @Composable
 fun AniMaPill(
     isAnimeMode: Boolean,
-    isShrunk: Boolean,
     onToggle: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // Material 3 Spring specs for fluid, organic motion
-    val springSpecDp = spring<Dp>(dampingRatio = 0.75f, stiffness = Spring.StiffnessMediumLow)
+    val haptic = LocalHapticFeedback.current
+    val springSpecDp = spring<androidx.compose.ui.unit.Dp>(dampingRatio = 0.75f, stiffness = Spring.StiffnessMediumLow)
 
     val trackWidth = 220.dp
-    val shrunkSize = 56.dp
+    val pillHeight = 56.dp
     val padding = 6.dp
 
-    // Dynamic widths
-    val pillWidth by animateDpAsState(
-        targetValue = if (isShrunk) shrunkSize else trackWidth,
-        animationSpec = springSpecDp,
-        label = "PillWidth",
-    )
-
-    // The "Thumb" is the highlighted background behind the active item
-    val thumbWidth by animateDpAsState(
-        targetValue = if (isShrunk) shrunkSize else (trackWidth - padding * 2) / 2,
-        animationSpec = springSpecDp,
-        label = "ThumbWidth",
-    )
-
-    // Sliding offset for the thumb (Moves left/right based on selection)
+    val thumbWidth = (trackWidth - padding * 2) / 2
     val thumbOffset by animateDpAsState(
-        targetValue = when {
-            isShrunk -> 0.dp
-            isAnimeMode -> padding // Positioned Left for Anime
-            else -> padding + thumbWidth // Positioned Right for Manga
-        },
+        targetValue = if (isAnimeMode) padding else padding + thumbWidth,
         animationSpec = springSpecDp,
         label = "ThumbOffset",
     )
 
     var swipeOffset by remember { mutableFloatStateOf(0f) }
 
-    // M3 Surface track container
     Box(
         modifier = modifier
-            .width(pillWidth)
-            .height(shrunkSize)
+            .width(trackWidth)
+            .height(pillHeight)
             .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.95f))
             .pointerInput(Unit) {
                 detectHorizontalDragGestures(
                     onDragEnd = { swipeOffset = 0f },
                     onHorizontalDrag = { _, dragAmount ->
                         swipeOffset += dragAmount
                         if (swipeOffset > 80f && !isAnimeMode) {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                             onToggle() // Swipe Right
                             swipeOffset = 0f
                         } else if (swipeOffset < -80f && isAnimeMode) {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                             onToggle() // Swipe Left
                             swipeOffset = 0f
                         }
@@ -173,7 +206,7 @@ fun AniMaPill(
             },
         contentAlignment = Alignment.CenterStart,
     ) {
-        // 1. The Sliding Highlight Thumb
+        // The Sliding Highlight Thumb
         Box(
             modifier = Modifier
                 .fillMaxHeight()
@@ -184,60 +217,38 @@ fun AniMaPill(
                 .background(MaterialTheme.colorScheme.primaryContainer),
         )
 
-        // 2. The Content (Icons or Text)
+        // The Clickable Labels
         Row(
             modifier = Modifier.fillMaxSize(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceEvenly,
         ) {
-            if (isShrunk) {
-                // When shrunk, morph the icon using M3 Shared-Axis style scaling
-                AnimatedContent(
-                    targetState = isAnimeMode,
-                    transitionSpec = {
-                        (
-                            fadeIn(animationSpec = tween(220, delayMillis = 90)) +
-                                scaleIn(initialScale = 0.8f, animationSpec = tween(220, delayMillis = 90))
-                            )
-                            .togetherWith(fadeOut(animationSpec = tween(90)))
+            AniMaLabel(
+                text = "Anime",
+                icon = Icons.Filled.Movie,
+                isSelected = isAnimeMode,
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {
+                        if (!isAnimeMode) {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            onToggle()
+                        }
                     },
-                    label = "IconTransition",
-                    modifier = Modifier.fillMaxSize(),
-                ) { isAnime ->
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = if (isAnime) Icons.Filled.Movie else Icons.Filled.Book,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.size(24.dp),
-                        )
-                    }
-                }
-            } else {
-                // Expanded: Show both clickable labels with smooth color blending
-                AniMaLabel(
-                    text = "Anime",
-                    icon = Icons.Filled.Movie,
-                    isSelected = isAnimeMode,
-                    modifier = Modifier
-                        .weight(1f)
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                        ) { if (!isAnimeMode) onToggle() },
-                )
-                AniMaLabel(
-                    text = "Manga",
-                    icon = Icons.Filled.Book,
-                    isSelected = !isAnimeMode,
-                    modifier = Modifier
-                        .weight(1f)
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                        ) { if (isAnimeMode) onToggle() },
-                )
-            }
+            )
+            AniMaLabel(
+                text = "Manga",
+                icon = Icons.Filled.Book,
+                isSelected = !isAnimeMode,
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {
+                        if (isAnimeMode) {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            onToggle()
+                        }
+                    },
+            )
         }
     }
 }
@@ -249,7 +260,6 @@ private fun AniMaLabel(
     isSelected: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    // Animate text and icon color based on whether the thumb is currently behind it
     val textColor by animateColorAsState(
         targetValue = if (isSelected) {
             MaterialTheme.colorScheme.onPrimaryContainer
