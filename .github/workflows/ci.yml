@@ -44,8 +44,26 @@ jobs:
           # Add dummy values if secrets are not set yet to prevent build failure
           sed -i 's/=${{ secrets.* }}/=dummy_value/g' local.properties 
 
+      - name: Decode Keystore and Setup Secrets
+        env:
+          ENCODED_KEYSTORE: ${{ secrets.ENCODED_KEYSTORE }}
+          CLIENT_SECRETS_TEXT: ${{ secrets.CLIENT_SECRETS_TEXT }}
+        run: |
+          if [ ! -z "$ENCODED_KEYSTORE" ]; then
+            echo "$ENCODED_KEYSTORE" | base64 --decode > keystore.jks
+          fi
+          if [ ! -z "$CLIENT_SECRETS_TEXT" ]; then
+            mkdir -p app/src/main/assets
+            echo "$CLIENT_SECRETS_TEXT" > app/src/main/assets/client_secrets.json
+          fi
+
       - name: Build app
         run: ./gradlew assembleDebug
+        env:
+          KEYSTORE_FILE: ${{ github.workspace }}/keystore.jks
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
       - name: Upload APK
         uses: actions/upload-artifact@v4

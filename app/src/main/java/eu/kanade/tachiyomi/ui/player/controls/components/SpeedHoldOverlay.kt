@@ -26,16 +26,16 @@ fun SpeedHoldOverlay(
     currentSpeed: Double,
     availableSpeeds: List<Double>,
     selectedIndex: Int,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Box(
         modifier = modifier
             .background(
                 color = Color.Black.copy(alpha = 0.6f),
-                shape = RoundedCornerShape(24.dp)
+                shape = RoundedCornerShape(24.dp),
             )
             .padding(horizontal = 12.dp, vertical = 6.dp),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         if (!isDragMode) {
             // --- MODE 1: Simple Hold ---
@@ -44,7 +44,7 @@ fun SpeedHoldOverlay(
                 text = String.format(Locale.US, "%.1fx", currentSpeed),
                 color = Color.White,
                 fontSize = 16.sp,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
             )
         } else {
             // --- MODE 2: Drag Selector ---
@@ -52,7 +52,7 @@ fun SpeedHoldOverlay(
 
             LaunchedEffect(selectedIndex) {
                 listState.animateScrollToItem(
-                    index = (selectedIndex - 2).coerceAtLeast(0)
+                    index = (selectedIndex - 2).coerceAtLeast(0),
                 )
             }
 
@@ -60,7 +60,7 @@ fun SpeedHoldOverlay(
                 state = listState,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.widthIn(max = 240.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 itemsIndexed(availableSpeeds) { index, speed ->
                     val isSelected = index == selectedIndex
@@ -72,7 +72,7 @@ fun SpeedHoldOverlay(
                         text = String.format(Locale.US, "%.1fx", speed),
                         color = color,
                         fontSize = size,
-                        fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Medium
+                        fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Medium,
                     )
                 }
             }
