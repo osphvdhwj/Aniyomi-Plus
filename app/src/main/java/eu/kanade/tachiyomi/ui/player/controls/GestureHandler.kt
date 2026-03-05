@@ -199,7 +199,6 @@ fun GestureHandler(
                     }
 
                     val changeBrightness = {
->>>>>>> origin/fix_gdrive_sync-14085820888072630156
                         viewModel.changeBrightnessTo(
                             calculateNewVerticalGestureValue(
                                 originalBrightness,
@@ -230,8 +229,6 @@ fun GestureHandler(
                         var isHorizontalDrag = false
                         var totalDragDistanceX = 0f
 
-<<<<<<< HEAD
-=======
                         val screenWidth = size.width
                         val isCenterTouch = down.position.x > screenWidth * 0.2f && down.position.x < screenWidth * 0.8f
 

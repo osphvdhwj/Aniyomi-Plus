@@ -40,7 +40,6 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-=======
     signingConfigs {
         create("release") {
             val keystoreFile = System.getenv("KEYSTORE_FILE")
@@ -59,7 +58,6 @@ android {
         }
     }
 
->>>>>>> origin/fix_gdrive_sync-14085820888072630156
     buildTypes {
         val debug by getting {
             applicationIdSuffix = ".dev"
@@ -67,7 +65,6 @@ android {
             isPseudoLocalesEnabled = true
         }
         val release by getting {
-<<<<<<< HEAD
             isMinifyEnabled = Config.enableCodeShrink
             isShrinkResources = Config.enableCodeShrink
 
