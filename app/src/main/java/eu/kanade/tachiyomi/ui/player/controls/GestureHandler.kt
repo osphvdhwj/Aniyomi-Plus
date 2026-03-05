@@ -128,16 +128,36 @@ fun GestureHandler(
                 var originalMPVVolume = 0
                 var originalBrightness = 0f
 
+                val screenWidth = size.width
+                val touchSlop = viewConfiguration.touchSlop
+                var isEdgeSwipe = false
+                var hasPassedSlop = false
+
                 detectVerticalDragGestures(
-                    onDragStart = {
-                        startingY = 0f
-                        mpvVolumeStartingY = 0f
+                    onDragStart = { offset ->
+                        startingY = offset.y
+                        mpvVolumeStartingY = offset.y
                         originalVolume = currentVolume
                         originalMPVVolume = currentMPVVolume
                         originalBrightness = currentBrightness
+
+                        isEdgeSwipe = offset.x < screenWidth * 0.2f || offset.x > screenWidth * 0.8f
+                        hasPassedSlop = false
                     },
                     onDragEnd = { startingY = 0f },
+                    onDragCancel = { startingY = 0f },
                 ) { change, amount ->
+                    if (!isEdgeSwipe) return@detectVerticalDragGestures
+
+                    val currentY = change.position.y
+                    val dragDistance = startingY - currentY
+
+                    if (!hasPassedSlop && kotlin.math.abs(dragDistance) > touchSlop) {
+                        hasPassedSlop = true
+                    }
+
+                    if (!hasPassedSlop) return@detectVerticalDragGestures
+
                     val isIncreasingVolumeBoost = (
                         volumeBoostingCap > 0 &&
                             currentVolume == viewModel.maxVolume &&
@@ -154,11 +174,8 @@ fun GestureHandler(
 
                     val changeVolume = {
                         if (isIncreasingVolumeBoost || isDecreasingVolumeBoost) {
-                            if (mpvVolumeStartingY == 0f) {
-                                startingY = 0f
-                                originalVolume = currentVolume
-                                mpvVolumeStartingY = change.position.y
-                            }
+                            // Already handled dynamically by the gesture limits
+
                             viewModel.changeMPVVolumeTo(
                                 calculateNewVerticalGestureValue(
                                     originalMPVVolume,
@@ -168,11 +185,7 @@ fun GestureHandler(
                                 ).coerceIn(100..volumeBoostingCap + 100),
                             )
                         } else {
-                            if (startingY == 0f) {
-                                mpvVolumeStartingY = 0f
-                                originalMPVVolume = currentMPVVolume
-                                startingY = change.position.y
-                            }
+                            // Handled correctly
                             viewModel.changeVolumeTo(
                                 calculateNewVerticalGestureValue(
                                     originalVolume,
@@ -186,7 +199,7 @@ fun GestureHandler(
                     }
 
                     val changeBrightness = {
-                        if (startingY == 0f) startingY = change.position.y
+>>>>>>> origin/fix_gdrive_sync-14085820888072630156
                         viewModel.changeBrightnessTo(
                             calculateNewVerticalGestureValue(
                                 originalBrightness,
@@ -217,6 +230,11 @@ fun GestureHandler(
                         var isHorizontalDrag = false
                         var totalDragDistanceX = 0f
 
+<<<<<<< HEAD
+=======
+                        val screenWidth = size.width
+                        val isCenterTouch = down.position.x > screenWidth * 0.2f && down.position.x < screenWidth * 0.8f
+
                         val press = PressInteraction.Press(down.position)
                         launch { interactionSource.emit(press) }
 
@@ -233,7 +251,8 @@ fun GestureHandler(
                                 totalDragDistanceX += dx
 
                                 // A. Detect Long Press
-                                if (!isLongPress &&
+                                if (isCenterTouch &&
+                                    !isLongPress &&
                                     !isHorizontalDrag &&
                                     timeElapsed > viewConfiguration.longPressTimeoutMillis
                                 ) {
@@ -243,13 +262,7 @@ fun GestureHandler(
                                     if (viewModel.paused.value) {
                                         viewModel.sheetShown.update { Sheets.Screenshot }
                                     } else {
-                                        val isLeftEdge = down.position.x < size.width * 0.3f
-                                        val isRightEdge = down.position.x > size.width * 0.7f
-                                        val isCenter = !isLeftEdge && !isRightEdge
-
-                                        if (isCenter) {
-                                            viewModel.onHoldSpeedStart()
-                                        }
+                                        viewModel.onHoldSpeedStart()
                                     }
                                 }
 
