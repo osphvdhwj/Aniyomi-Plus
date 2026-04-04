@@ -29,6 +29,7 @@ import eu.kanade.tachiyomi.util.system.cancelNotification
 import eu.kanade.tachiyomi.util.system.getBitmapOrNull
 import eu.kanade.tachiyomi.util.system.notificationBuilder
 import eu.kanade.tachiyomi.util.system.notify
+import kotlinx.coroutines.DelicateCoroutinesApi
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.lang.launchUI
 import tachiyomi.domain.entries.anime.model.Anime
@@ -42,6 +43,7 @@ import uy.kohesive.injekt.api.get
 import java.math.RoundingMode
 import java.text.NumberFormat
 
+@OptIn(DelicateCoroutinesApi::class)
 class AnimeLibraryUpdateNotifier(
     private val context: Context,
 
@@ -341,6 +343,7 @@ class AnimeLibraryUpdateNotifier(
                     episodes.size,
                 )
             }
+
             // Only 1 episode has a parsed episode number
             1 -> {
                 val remaining = episodes.size - displayableEpisodeNumbers.size
@@ -359,6 +362,7 @@ class AnimeLibraryUpdateNotifier(
                     )
                 }
             }
+
             // Everything else (i.e. multiple parsed episode numbers)
             else -> {
                 val shouldTruncate = displayableEpisodeNumbers.size > NOTIF_MAX_EPISODES

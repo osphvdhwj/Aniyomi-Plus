@@ -61,6 +61,7 @@ import eu.kanade.tachiyomi.ui.browse.anime.migration.search.MigrateAnimeSearchSc
 import eu.kanade.tachiyomi.ui.browse.anime.source.browse.BrowseAnimeSourceScreen
 import eu.kanade.tachiyomi.ui.browse.anime.source.globalsearch.GlobalAnimeSearchScreen
 import eu.kanade.tachiyomi.ui.category.CategoriesTab
+import eu.kanade.tachiyomi.ui.entries.anime.notes.AnimeNotesScreen
 import eu.kanade.tachiyomi.ui.entries.anime.track.AnimeTrackInfoDialogHomeScreen
 import eu.kanade.tachiyomi.ui.home.HomeScreen
 import eu.kanade.tachiyomi.ui.library.anime.AnimeLibraryTab
@@ -140,6 +141,7 @@ class AnimeScreen(
                         navigator = navigator,
                         scope = scope,
                     )
+
                     false -> MangaDetailContent(
                         context = context,
                         screenModel = screenModel,
@@ -264,6 +266,7 @@ class AnimeScreen(
             onMigrateClicked = {
                 navigator.push(MigrateAnimeSearchScreen(successState.anime.id))
             }.takeIf { successState.anime.favorite },
+            onEditNotesClicked = { navigator.push(AnimeNotesScreen(anime = successState.anime)) },
             changeAnimeSkipIntro = screenModel::showAnimeSkipIntroDialog
                 .takeIf { successState.anime.favorite && successState.anime.fetchType == FetchType.Episodes },
             onMultiBookmarkClicked = screenModel::bookmarkEpisodes,
@@ -316,6 +319,7 @@ class AnimeScreen(
         }
         when (val dialog = successState.dialog) {
             null -> {}
+
             is AnimeScreenModel.Dialog.ChangeCategory -> {
                 ChangeCategoryDialog(
                     initialSelection = dialog.initialSelection,
@@ -326,6 +330,7 @@ class AnimeScreen(
                     },
                 )
             }
+
             is AnimeScreenModel.Dialog.DeleteEpisodes -> {
                 DeleteItemsDialog(
                     onDismissRequest = onDismissRequest,
@@ -359,6 +364,7 @@ class AnimeScreen(
                     onPopScreen = { navigator.replace(AnimeScreen(dialog.newAnime.id)) },
                 )
             }
+
             AnimeScreenModel.Dialog.EpisodeSettingsSheet -> EpisodeSettingsDialog(
                 onDismissRequest = onDismissRequest,
                 anime = successState.anime,
@@ -372,6 +378,7 @@ class AnimeScreen(
                 onShowSummariesEnabled = screenModel::showEpisodeSummaries,
                 onSetAsDefault = screenModel::setCurrentSettingsAsDefault,
             )
+
             AnimeScreenModel.Dialog.SeasonSettingsSheet -> SeasonSettingsDialog(
                 onDismissRequest = onDismissRequest,
                 anime = successState.anime,
@@ -392,6 +399,7 @@ class AnimeScreen(
                 onDisplayModeChanged = screenModel::setSeasonDisplayMode,
                 onSetAsDefault = screenModel::setSeasonCurrentSettingsAsDefault,
             )
+
             AnimeScreenModel.Dialog.TrackSheet -> {
                 NavigatorAdaptiveSheet(
                     screen = AnimeTrackInfoDialogHomeScreen(
@@ -403,6 +411,7 @@ class AnimeScreen(
                     onDismissRequest = onDismissRequest,
                 )
             }
+
             AnimeScreenModel.Dialog.FullImages -> {
                 val sm = rememberScreenModel { AnimeImageScreenModel(successState.anime.id) }
                 val anime by sm.state.collectAsState()
@@ -433,6 +442,7 @@ class AnimeScreen(
                     LoadingScreen(Modifier.systemBarsPadding())
                 }
             }
+
             // SY -->
             is AnimeScreenModel.Dialog.EditAnimeInfo -> {
                 EditAnimeDialog(
@@ -441,6 +451,7 @@ class AnimeScreen(
                     onPositiveClick = screenModel::updateAnimeInfo,
                 )
             }
+
             // SY <--
             is AnimeScreenModel.Dialog.SetAnimeFetchInterval -> {
                 SetIntervalDialog(
@@ -452,6 +463,7 @@ class AnimeScreen(
                         .takeIf { screenModel.isUpdateIntervalEnabled },
                 )
             }
+
             AnimeScreenModel.Dialog.ChangeAnimeSkipIntro -> {
                 fun updateSkipIntroLength(newLength: Long) {
                     scope.launchIO {
@@ -473,6 +485,7 @@ class AnimeScreen(
                     },
                 )
             }
+
             is AnimeScreenModel.Dialog.ShowQualities -> {
                 EpisodeOptionsDialogScreen.onDismissDialog = onDismissRequest
                 val episodeTitle = if (dialog.anime.displayMode == Anime.EPISODE_DISPLAY_NUMBER) {
@@ -575,6 +588,7 @@ class AnimeScreen(
                 navigator.pop()
                 AnimeLibraryTab.search(query)
             }
+
             is BrowseAnimeSourceScreen -> {
                 navigator.pop()
                 previousController.search(query)

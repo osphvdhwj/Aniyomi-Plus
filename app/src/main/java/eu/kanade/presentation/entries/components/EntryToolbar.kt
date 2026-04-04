@@ -46,6 +46,7 @@ fun EntryToolbar(
     onClickEditCategory: (() -> Unit)?,
     onClickRefresh: () -> Unit,
     onClickMigrate: (() -> Unit)?,
+    onClickEditNotes: () -> Unit,
     onClickSettings: (() -> Unit)?,
     // Anime only
     changeAnimeSkipIntro: (() -> Unit)?,
@@ -91,8 +92,10 @@ fun EntryToolbar(
                 navigateUp()
 
                 if (isHomeEnabled && navigator != null) {
-                    if (navigator.size >= 2 &&
-                        navigator.items[navigator.size - 2] is AnimeScreen ||
+                    if ((
+                            navigator.size >= 2 &&
+                                navigator.items[navigator.size - 2] is AnimeScreen
+                            ) ||
                         navigator.size >= 5
                     ) {
                         onHomeClicked()
@@ -198,6 +201,12 @@ fun EntryToolbar(
                             ),
                         )
                     }
+                    add(
+                        AppBar.OverflowAction(
+                            title = stringResource(MR.strings.action_notes),
+                            onClick = onClickEditNotes,
+                        ),
+                    )
                     // KMK -->
                     if (onClickRelatedAnimes != null) {
                         add(

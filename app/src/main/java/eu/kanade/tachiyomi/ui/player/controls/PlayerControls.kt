@@ -117,6 +117,9 @@ fun PlayerControls(
     val paused by viewModel.paused.collectAsState()
     val gestureSeekAmount by viewModel.gestureSeekAmount.collectAsState()
     val doubleTapSeekAmount by viewModel.doubleTapSeekAmount.collectAsState()
+    val showDoubleTapOvals by playerPreferences.showDoubleTapOvals().collectAsState()
+    val showSeekIcon by playerPreferences.showSeekIcon().collectAsState()
+    val showSeekTime by playerPreferences.showSeekTimeWhileSeeking().collectAsState()
     val seekText by viewModel.seekText.collectAsState()
     val currentChapter by viewModel.currentChapter.collectAsState()
     val chapters by viewModel.chapters.collectAsState()
@@ -150,7 +153,14 @@ fun PlayerControls(
         viewModel = viewModel,
         interactionSource = interactionSource,
     )
-    DoubleTapToSeekOvals(doubleTapSeekAmount, seekText, interactionSource)
+    DoubleTapToSeekOvals(
+        doubleTapSeekAmount,
+        seekText,
+        showDoubleTapOvals,
+        showSeekIcon,
+        showSeekTime,
+        interactionSource,
+    )
     CompositionLocalProvider(
         LocalRippleConfiguration provides playerRippleConfiguration,
         LocalPlayerButtonsClickEvent provides { resetControls = !resetControls },
@@ -306,12 +316,15 @@ fun PlayerControls(
                     when (currentPlayerUpdate) {
                         // is PlayerUpdates.DoubleSpeed -> DoubleSpeedPlayerUpdate()
                         is PlayerUpdates.AspectRatio -> TextPlayerUpdate(stringResource(aspectRatio.titleRes))
+
                         is PlayerUpdates.ShowText -> TextPlayerUpdate(
                             (currentPlayerUpdate as PlayerUpdates.ShowText).value,
                         )
+
                         is PlayerUpdates.ShowTextResource -> TextPlayerUpdate(
                             stringResource((currentPlayerUpdate as PlayerUpdates.ShowTextResource).textResource),
                         )
+
                         else -> {}
                     }
                 }
@@ -332,7 +345,7 @@ fun PlayerControls(
                 }
                 AnimatedVisibility(
                     visible =
-                    (controlsShown && !areControlsLocked || gestureSeekAmount != null) ||
+                    ((controlsShown && !areControlsLocked) || gestureSeekAmount != null) ||
                         isLoading ||
                         isLoadingEpisode,
                     enter = fadeIn(playerControlsEnterAnimationSpec()),

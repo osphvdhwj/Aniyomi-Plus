@@ -66,7 +66,7 @@ class Anilist(id: Long) :
 
     override val supportsPrivateTracking: Boolean = true
 
-    private val scorePreference = trackPreferences.anilistScoreType()
+    private val scorePreference = trackPreferences.anilistScoreType
 
     init {
         // If the preference is an int from APIv1, logout user to force using APIv2
@@ -124,14 +124,19 @@ class Anilist(id: Long) :
         return when (scorePreference.get()) {
             // 10 point
             POINT_10 -> IntRange(0, 10).map(Int::toString).toImmutableList()
+
             // 100 point
             POINT_100 -> IntRange(0, 100).map(Int::toString).toImmutableList()
+
             // 5 stars
             POINT_5 -> IntRange(0, 5).map { "$it ★" }.toImmutableList()
+
             // Smiley
             POINT_3 -> persistentListOf("-", "😦", "😐", "😊")
+
             // 10 point decimal
             POINT_10_DECIMAL -> IntRange(0, 100).map { (it / 10f).toString() }.toImmutableList()
+
             else -> throw Exception("Unknown score type")
         }
     }
@@ -150,20 +155,25 @@ class Anilist(id: Long) :
         return when (scorePreference.get()) {
             // 10 point
             POINT_10 -> index * 10.0
+
             // 100 point
             POINT_100 -> index.toDouble()
+
             // 5 stars
             POINT_5 -> when (index) {
                 0 -> 0.0
                 else -> index * 20.0 - 10.0
             }
+
             // Smiley
             POINT_3 -> when (index) {
                 0 -> 0.0
                 else -> index * 25.0 + 10.0
             }
+
             // 10 point decimal
             POINT_10_DECIMAL -> index.toDouble()
+
             else -> throw Exception("Unknown score type")
         }
     }
@@ -176,12 +186,14 @@ class Anilist(id: Long) :
                 0.0 -> "0 ★"
                 else -> "${((score + 10) / 20).toInt()} ★"
             }
+
             POINT_3 -> when {
                 score == 0.0 -> "0"
                 score <= 35 -> "😦"
                 score <= 60 -> "😐"
                 else -> "😊"
             }
+
             else -> track.toApiScore()
         }
     }
@@ -194,12 +206,14 @@ class Anilist(id: Long) :
                 0.0 -> "0 ★"
                 else -> "${((score + 10) / 20).toInt()} ★"
             }
+
             POINT_3 -> when {
                 score == 0.0 -> "0"
                 score <= 35 -> "😦"
                 score <= 60 -> "😐"
                 else -> "😊"
             }
+
             else -> track.toApiScore()
         }
     }
@@ -300,7 +314,7 @@ class Anilist(id: Long) :
         }
     }
 
-    override suspend fun bind(track: AnimeTrack, hasReadChapters: Boolean): AnimeTrack {
+    override suspend fun bind(track: AnimeTrack, hasSeenEpisodes: Boolean): AnimeTrack {
         val remoteTrack = api.findLibAnime(track, getUsername().toInt())
         return if (remoteTrack != null) {
             track.copyPersonalFrom(remoteTrack, copyRemotePrivate = false)
@@ -308,13 +322,13 @@ class Anilist(id: Long) :
 
             if (track.status != COMPLETED) {
                 val isRereading = track.status == REWATCHING
-                track.status = if (!isRereading && hasReadChapters) WATCHING else track.status
+                track.status = if (!isRereading && hasSeenEpisodes) WATCHING else track.status
             }
 
             update(track)
         } else {
             // Set default fields if it's not found in the list
-            track.status = if (hasReadChapters) WATCHING else PLAN_TO_WATCH
+            track.status = if (hasSeenEpisodes) WATCHING else PLAN_TO_WATCH
             track.score = 0.0
             add(track)
         }

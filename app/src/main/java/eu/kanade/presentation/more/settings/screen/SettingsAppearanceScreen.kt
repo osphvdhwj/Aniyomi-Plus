@@ -190,6 +190,20 @@ object SettingsAppearanceScreen : SearchableSettings {
                         formattedNow,
                     ),
                 ),
+                Preference.PreferenceItem.SwitchPreference(
+                    preference = uiPreferences.showEpisodeTimestamps(),
+                    title = stringResource(TLMR.strings.pref_show_episode_timestamp),
+                    subtitle = stringResource(TLMR.strings.pref_show_episode_timestamp_summary),
+                ),
+                Preference.PreferenceItem.SwitchPreference(
+                    preference = uiPreferences.showChapterTimestamps(),
+                    title = stringResource(TLMR.strings.pref_show_chapter_timestamp),
+                    subtitle = stringResource(TLMR.strings.pref_show_chapter_timestamp_summary),
+                ),
+                Preference.PreferenceItem.SwitchPreference(
+                    preference = uiPreferences.imagesInDescription(),
+                    title = stringResource(MR.strings.pref_display_images_description),
+                ),
             ),
         )
     }

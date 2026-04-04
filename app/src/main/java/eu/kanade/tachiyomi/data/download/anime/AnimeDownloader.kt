@@ -425,6 +425,7 @@ class AnimeDownloader(
             // If the video is already downloaded, do nothing. Otherwise download from network
             val file = when {
                 videoFile != null -> videoFile
+
                 else -> {
                     notifier.onProgressChange(download)
 
@@ -504,7 +505,7 @@ class AnimeDownloader(
     }
 
     private fun isTor(video: Video): Boolean {
-        return (video.videoUrl?.startsWith("magnet") == true || video.videoUrl?.endsWith(".torrent") == true)
+        return video.videoUrl.startsWith("magnet") || video.videoUrl.endsWith(".torrent")
     }
 
     private suspend fun torrentDownload(
@@ -515,12 +516,12 @@ class AnimeDownloader(
         val video = download.video!!
         TorrentServerService.start()
         TorrentServerService.wait(10)
-        val currentTorrent = TorrentServerApi.addTorrent(video.videoUrl!!, video.quality, "", "", false)
+        val currentTorrent = TorrentServerApi.addTorrent(video.videoUrl, video.videoTitle, "", "", false)
         var index = 0
-        if (video.videoUrl!!.contains("index=")) {
+        if (video.videoUrl.contains("index=")) {
             index = try {
-                video.videoUrl?.substringAfter("index=")
-                    ?.substringBefore("&")?.toInt() ?: 0
+                video.videoUrl.substringAfter("index=")
+                    .substringBefore("&").toInt()
             } catch (_: Exception) {
                 0
             }
@@ -721,6 +722,7 @@ class AnimeDownloader(
                             putExtra("extra_headers", bundle)
                         }
                     }
+
                     // ADM
                     pkgName.startsWith("com.dv.adm") -> {
                         val headers = (video.headers ?: source.headers).toList()

@@ -8,7 +8,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.vector.ImageVector
 import eu.kanade.core.preference.asState
-import eu.kanade.presentation.more.settings.Preference.PreferenceItem
 import eu.kanade.tachiyomi.data.connections.ConnectionsService
 import eu.kanade.tachiyomi.data.track.Tracker
 import kotlinx.collections.immutable.ImmutableList
@@ -40,6 +39,7 @@ sealed class Preference {
             override val subtitle: String? = null,
             override val icon: ImageVector? = null,
             override val enabled: Boolean = true,
+            val widget: @Composable (() -> Unit)? = null,
             val onClick: (() -> Unit)? = null,
         ) : PreferenceItem<String>() {
             override val onValueChanged: suspend (value: String) -> Boolean = { true }
@@ -232,6 +232,7 @@ sealed class Preference {
         }
 
         // AM (CONNECTIONS) -->
+
         /**
          * A [PreferenceItem] for individual connections service.
          */

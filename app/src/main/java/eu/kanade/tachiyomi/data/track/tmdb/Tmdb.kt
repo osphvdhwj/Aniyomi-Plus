@@ -153,6 +153,7 @@ class Tmdb(id: Long) : BaseTracker(id, "TMDB"), AnimeTracker {
                         accountJson.has("rated") && accountJson.get("rated") is JSONObject -> {
                             accountJson.getJSONObject("rated").optDouble("value", 0.0)
                         }
+
                         else -> 0.0
                     }
                     status = if (accountJson.optBoolean("watchlist", false)) PLAN_TO_WATCH else WATCHING
@@ -340,7 +341,7 @@ class Tmdb(id: Long) : BaseTracker(id, "TMDB"), AnimeTracker {
                     val item = castArr.getJSONObject(i)
                     val name = item.optString("name")
                     val character = item.optString("character").ifEmpty { null }
-                    var image: String? = item.optString("profile_path", null)
+                    var image = item.optString("profile_path").takeIf { it.isNotBlank() }
                     if (!image.isNullOrBlank()) image = TmdbApi.IMAGE_BASE + image
                     credits.add(Credit(name = name, role = "Cast", character = character, image_url = image))
                 }
@@ -352,7 +353,7 @@ class Tmdb(id: Long) : BaseTracker(id, "TMDB"), AnimeTracker {
                     val item = crewArr.getJSONObject(i)
                     val name = item.optString("name")
                     val job = item.optString("job").ifEmpty { null }
-                    var image: String? = item.optString("profile_path", null)
+                    var image = item.optString("profile_path").takeIf { it.isNotBlank() }
                     if (!image.isNullOrBlank()) image = TmdbApi.IMAGE_BASE + image
                     credits.add(Credit(name = name, role = job, image_url = image))
                 }
@@ -372,7 +373,9 @@ class Tmdb(id: Long) : BaseTracker(id, "TMDB"), AnimeTracker {
                 val movieRegex = ".*/movie/(\\d+).*".toRegex()
                 when {
                     tvRegex.matches(url) -> item.remote_id = tvRegex.find(url)!!.groupValues[1].toLong()
+
                     movieRegex.matches(url) -> item.remote_id = movieRegex.find(url)!!.groupValues[1].toLong()
+
                     else -> {
                         val seg = url.trimEnd('/').substringAfterLast('/')
                         if (seg.all { it.isDigit() }) {
@@ -396,6 +399,7 @@ class Tmdb(id: Long) : BaseTracker(id, "TMDB"), AnimeTracker {
                         item.title = detail.title
                     } catch (_: Exception) {}
                 }
+
                 isMovie -> {
                     item.tracking_url = "https://www.themoviedb.org/movie/${item.remote_id}"
                     try {
@@ -403,6 +407,7 @@ class Tmdb(id: Long) : BaseTracker(id, "TMDB"), AnimeTracker {
                         item.title = detail.title
                     } catch (_: Exception) {}
                 }
+
                 else -> {
                     try {
                         val detailTv = api.getTv(item.remote_id, lang)

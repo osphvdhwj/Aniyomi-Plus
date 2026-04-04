@@ -67,7 +67,7 @@ fun ChapterSettingsDialog(
         )
     }
 
-    val downloadedOnly = remember { Injekt.get<BasePreferences>().downloadedOnly().get() }
+    val downloadedOnly = remember { Injekt.get<BasePreferences>().downloadedOnly.get() }
 
     TabbedDialog(
         onDismissRequest = onDismissRequest,
@@ -112,6 +112,7 @@ fun ChapterSettingsDialog(
                         onScanlatorFilterClicked = onScanlatorFilterClicked,
                     )
                 }
+
                 1 -> {
                     SortPage(
                         sortingMode = manga?.sorting ?: 0,
@@ -119,6 +120,7 @@ fun ChapterSettingsDialog(
                         onItemSelected = onSortModeChanged,
                     )
                 }
+
                 2 -> {
                     DisplayPage(
                         displayMode = manga?.displayMode ?: 0,

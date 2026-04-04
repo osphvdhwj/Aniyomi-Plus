@@ -152,6 +152,7 @@ class AnimeRestorer(
                 updateStrategy = anime.updateStrategy.let(AnimeUpdateStrategyColumnAdapter::encode),
                 version = anime.version,
                 isSyncing = 1,
+                notes = anime.notes,
                 fetchType = anime.fetchType.let(FetchTypeColumnAdapter::encode),
                 parentId = anime.parentId,
                 seasonFlags = anime.seasonFlags,
@@ -230,9 +231,11 @@ class AnimeRestorer(
             episode.copyFrom(dbEpisode).let {
                 when {
                     dbEpisode.seen && !it.seen -> it.copy(seen = true, lastSecondSeen = dbEpisode.lastSecondSeen)
+
                     it.lastSecondSeen == 0L && dbEpisode.lastSecondSeen != 0L -> it.copy(
                         lastSecondSeen = dbEpisode.lastSecondSeen,
                     )
+
                     else -> it
                 }
             }
@@ -322,6 +325,7 @@ class AnimeRestorer(
                 dateAdded = anime.dateAdded,
                 updateStrategy = anime.updateStrategy,
                 version = anime.version,
+                notes = anime.notes,
                 fetchType = anime.fetchType,
                 parentId = anime.parentId,
                 seasonFlags = anime.seasonFlags,

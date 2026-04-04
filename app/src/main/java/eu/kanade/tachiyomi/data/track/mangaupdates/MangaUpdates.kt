@@ -34,7 +34,9 @@ class MangaUpdates(id: Long) : BaseTracker(id, "MangaUpdates"), MangaTracker, De
             .flatMap { decimal ->
                 when (decimal) {
                     0 -> listOf("-")
+
                     10 -> listOf("10.0")
+
                     else -> (0..9).map { fraction ->
                         "$decimal.$fraction"
                     }
@@ -108,7 +110,7 @@ class MangaUpdates(id: Long) : BaseTracker(id, "MangaUpdates"), MangaTracker, De
 
     override suspend fun getMangaMetadata(track: DomainTrack): TrackMangaMetadata? {
         val series = api.getSeries(track)
-        return series?.let {
+        return series.let {
             TrackMangaMetadata(
                 it.seriesId,
                 it.title?.htmlDecode(),

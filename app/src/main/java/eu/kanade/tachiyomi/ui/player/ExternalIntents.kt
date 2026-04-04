@@ -364,17 +364,26 @@ class ExternalIntents {
     private fun getComponent(packageName: String): ComponentName? {
         return when (packageName) {
             MPV_PLAYER -> ComponentName(packageName, "$packageName.MPVActivity")
+
             MX_PLAYER, MX_PLAYER_FREE, MX_PLAYER_PRO -> ComponentName(
                 packageName,
                 "$packageName.ActivityScreen",
             )
+
             VLC_PLAYER -> ComponentName(packageName, "$packageName.gui.video.VideoPlayerActivity")
+
             MPV_KT, MPV_KT_PREVIEW -> ComponentName(packageName, "live.mehiz.mpvkt.ui.player.PlayerActivity")
+
             MPV_REMOTE -> ComponentName(packageName, "$packageName.MainActivity")
+
             JUST_PLAYER -> ComponentName(packageName, "$packageName.PlayerActivity")
+
             NEXT_PLAYER -> ComponentName(packageName, "$packageName.feature.player.PlayerActivity")
+
             X_PLAYER -> ComponentName(packageName, "com.inshot.xplayer.activities.PlayerActivity")
+
             AMNIS -> ComponentName(packageName, "$packageName.gui.player.PlayerActivity")
+
             else -> null
         }
     }
@@ -513,7 +522,7 @@ class ExternalIntents {
                 ),
             )
             if (trackPreferences.autoUpdateTrack().get() && currEp.seen) {
-                updateTrackEpisodeSeen(currEp.episodeNumber.toDouble(), anime)
+                updateTrackEpisodeSeen(currEp.episodeNumber, anime)
             }
             if (seen) {
                 deleteEpisodeIfNeeded(currentEpisode, anime)
