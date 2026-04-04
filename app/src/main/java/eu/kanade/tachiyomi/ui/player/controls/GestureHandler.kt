@@ -17,22 +17,42 @@
 
 package eu.kanade.tachiyomi.ui.player.controls
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.indication
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeGestures
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalRippleConfiguration
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
@@ -46,12 +66,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import eu.kanade.presentation.player.components.LeftSideOvalShape
 import eu.kanade.presentation.player.components.RightSideOvalShape
@@ -72,6 +96,7 @@ import tachiyomi.presentation.core.i18n.pluralStringResource
 import tachiyomi.presentation.core.util.collectAsState
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import kotlin.math.abs
 
 @Composable
 fun GestureHandler(
@@ -92,6 +117,11 @@ fun GestureHandler(
     val seekAmount by viewModel.doubleTapSeekAmount.collectAsState()
     val isSeekingForwards by viewModel.isSeekingForwards.collectAsState()
     var isDoubleTapSeeking by remember { mutableStateOf(false) }
+
+    // State for 2x Speed Hold & Drag
+    var isHoldingDoubleSpeed by remember { mutableStateOf(false) }
+    var currentDragSpeed by remember { mutableStateOf(2.0f) }
+    var capturedOriginalSpeed by remember { mutableStateOf(1.0) }
 
     LaunchedEffect(seekAmount) {
         delay(800)
@@ -119,7 +149,7 @@ fun GestureHandler(
             .fillMaxSize()
             .windowInsetsPadding(WindowInsets.safeGestures)
             .pointerInput(Unit) {
-                val originalSpeed = viewModel.playbackSpeed.value
+                // Handle Taps and Double Taps
                 detectTapGestures(
                     onTap = {
                         if (controlsShown) viewModel.hideControls() else viewModel.showControls()
@@ -160,22 +190,61 @@ fun GestureHandler(
                         }
                         interactionSource.emit(press)
                         tryAwaitRelease()
-                        if (isLongPressing) {
-                            isLongPressing = false
-                            MPVLib.setPropertyDouble("speed", originalSpeed.toDouble())
-                            viewModel.playerUpdate.update { PlayerUpdates.None }
-                        }
                         interactionSource.emit(PressInteraction.Release(press))
                     },
-                    onLongPress = {
-                        if (areControlsLocked) return@detectTapGestures
-                        if (!isLongPressing) {
-                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                )
+            }
+            .pointerInput(areControlsLocked) {
+                // Handle Long Press & Hold-to-Drag Speed
+                var dragTotalX = 0f
+
+                detectDragGesturesAfterLongPress(
+                    onDragStart = {
+                        if (areControlsLocked) return@detectDragGesturesAfterLongPress
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                        
+                        if (!viewModel.paused.value) {
+                            isHoldingDoubleSpeed = true
+                            capturedOriginalSpeed = viewModel.playbackSpeed.value.toDouble()
+                            dragTotalX = 0f
+                            currentDragSpeed = 2.0f
+                            MPVLib.setPropertyDouble("speed", 2.0)
+                        } else {
                             isLongPressing = true
                             viewModel.pause()
                             viewModel.sheetShown.update { Sheets.Screenshot }
                         }
                     },
+                    onDragEnd = {
+                        if (isHoldingDoubleSpeed) {
+                            isHoldingDoubleSpeed = false
+                            MPVLib.setPropertyDouble("speed", capturedOriginalSpeed)
+                            viewModel.playerUpdate.update { PlayerUpdates.None }
+                        }
+                        if (isLongPressing) isLongPressing = false
+                    },
+                    onDragCancel = {
+                        if (isHoldingDoubleSpeed) {
+                            isHoldingDoubleSpeed = false
+                            MPVLib.setPropertyDouble("speed", capturedOriginalSpeed)
+                            viewModel.playerUpdate.update { PlayerUpdates.None }
+                        }
+                        if (isLongPressing) isLongPressing = false
+                    },
+                    onDrag = { change, dragAmount ->
+                        if (isHoldingDoubleSpeed) {
+                            change.consume()
+                            dragTotalX += dragAmount.x
+                            val dragSensitivity = 0.005f
+                            val speedDelta = dragTotalX * dragSensitivity
+                            val newSpeed = (2.0f + speedDelta).coerceIn(1.0f, 4.0f)
+                            
+                            if (abs(currentDragSpeed - newSpeed) >= 0.1f) {
+                                currentDragSpeed = ((newSpeed * 10.0f).toInt() / 10.0f)
+                                MPVLib.setPropertyDouble("speed", currentDragSpeed.toDouble())
+                            }
+                        }
+                    }
                 )
             }
             .pointerInput(areControlsLocked) {
@@ -296,7 +365,14 @@ fun GestureHandler(
                     }
                 }
             },
-    )
+    ) {
+        // UI Overlay for Dynamic 2x Speed
+        DoubleSpeedIndicator(
+            isHoldingDoubleSpeed = isHoldingDoubleSpeed,
+            currentSpeed = currentDragSpeed,
+            modifier = Modifier.align(Alignment.TopCenter)
+        )
+    }
 }
 
 @Composable
@@ -352,6 +428,81 @@ fun DoubleTapToSeekOvals(
             }
         }
     }
+}
+
+// Visual Indicator Composables
+@Composable
+fun DoubleSpeedIndicator(
+    isHoldingDoubleSpeed: Boolean,
+    currentSpeed: Float,
+    modifier: Modifier = Modifier
+) {
+    AnimatedVisibility(
+        visible = isHoldingDoubleSpeed,
+        enter = fadeIn(),
+        exit = fadeOut(),
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(top = 32.dp)
+    ) {
+        Box(contentAlignment = Alignment.TopCenter) {
+            Row(
+                modifier = Modifier
+                    .background(
+                        color = Color.Black.copy(alpha = 0.7f),
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = "${currentSpeed}x Speed",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                MovingChevron(isRight = currentSpeed >= 1.0f)
+            }
+        }
+    }
+}
+
+@Composable
+fun MovingChevron(
+    isRight: Boolean,
+) {
+    val progress = remember { Animatable(0f) }
+    
+    LaunchedEffect(isRight) {
+        progress.snapTo(0f)
+        progress.animateTo(
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(600, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart
+            )
+        )
+    }
+    
+    val startOffset = if (isRight) -10f else 10f
+    val currentOffset = startOffset * (1f - progress.value)
+    val alpha = 1f - progress.value
+    
+    Icon(
+        imageVector = if (isRight) Icons.Filled.KeyboardArrowRight else Icons.Filled.KeyboardArrowLeft,
+        contentDescription = null,
+        tint = Color.White,
+        modifier = Modifier
+            .size(24.dp)
+            .alpha(alpha)
+            .layout { measurable, constraints ->
+                val placeable = measurable.measure(constraints)
+                layout(placeable.width, placeable.height) {
+                    placeable.placeRelative(x = currentOffset.dp.roundToPx(), y = 0)
+                }
+            }
+    )
 }
 
 fun calculateNewVerticalGestureValue(originalValue: Int, startingY: Float, newY: Float, sensitivity: Float): Int {
