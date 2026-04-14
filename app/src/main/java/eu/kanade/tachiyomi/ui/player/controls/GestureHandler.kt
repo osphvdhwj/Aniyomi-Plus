@@ -202,7 +202,7 @@ fun GestureHandler(
                     onDragStart = {
                         if (areControlsLocked) return@detectDragGesturesAfterLongPress
                         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                        
+
                         if (!viewModel.paused.value) {
                             isHoldingDoubleSpeed = true
                             capturedOriginalSpeed = viewModel.playbackSpeed.value.toDouble()
@@ -238,13 +238,13 @@ fun GestureHandler(
                             val dragSensitivity = 0.005f
                             val speedDelta = dragTotalX * dragSensitivity
                             val newSpeed = (2.0f + speedDelta).coerceIn(1.0f, 4.0f)
-                            
+
                             if (abs(currentDragSpeed - newSpeed) >= 0.1f) {
                                 currentDragSpeed = ((newSpeed * 10.0f).toInt() / 10.0f)
                                 MPVLib.setPropertyDouble("speed", currentDragSpeed.toDouble())
                             }
                         }
-                    }
+                    },
                 )
             }
             .pointerInput(areControlsLocked) {
@@ -370,7 +370,7 @@ fun GestureHandler(
         DoubleSpeedIndicator(
             isHoldingDoubleSpeed = isHoldingDoubleSpeed,
             currentSpeed = currentDragSpeed,
-            modifier = Modifier.align(Alignment.TopCenter)
+            modifier = Modifier.align(Alignment.TopCenter),
         )
     }
 }
@@ -435,7 +435,7 @@ fun DoubleTapToSeekOvals(
 fun DoubleSpeedIndicator(
     isHoldingDoubleSpeed: Boolean,
     currentSpeed: Float,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     AnimatedVisibility(
         visible = isHoldingDoubleSpeed,
@@ -443,23 +443,23 @@ fun DoubleSpeedIndicator(
         exit = fadeOut(),
         modifier = modifier
             .fillMaxWidth()
-            .padding(top = 32.dp)
+            .padding(top = 32.dp),
     ) {
         Box(contentAlignment = Alignment.TopCenter) {
             Row(
                 modifier = Modifier
                     .background(
                         color = Color.Black.copy(alpha = 0.7f),
-                        shape = RoundedCornerShape(16.dp)
+                        shape = RoundedCornerShape(16.dp),
                     )
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
+                horizontalArrangement = Arrangement.Center,
             ) {
                 Text(
                     text = "${currentSpeed}x Speed",
                     color = Color.White,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 MovingChevron(isRight = currentSpeed >= 1.0f)
@@ -473,22 +473,22 @@ fun MovingChevron(
     isRight: Boolean,
 ) {
     val progress = remember { Animatable(0f) }
-    
+
     LaunchedEffect(isRight) {
         progress.snapTo(0f)
         progress.animateTo(
             targetValue = 1f,
             animationSpec = infiniteRepeatable(
                 animation = tween(600, easing = LinearEasing),
-                repeatMode = RepeatMode.Restart
-            )
+                repeatMode = RepeatMode.Restart,
+            ),
         )
     }
-    
+
     val startOffset = if (isRight) -10f else 10f
     val currentOffset = startOffset * (1f - progress.value)
     val alpha = 1f - progress.value
-    
+
     Icon(
         imageVector = if (isRight) Icons.Filled.KeyboardArrowRight else Icons.Filled.KeyboardArrowLeft,
         contentDescription = null,
@@ -501,7 +501,7 @@ fun MovingChevron(
                 layout(placeable.width, placeable.height) {
                     placeable.placeRelative(x = currentOffset.dp.roundToPx(), y = 0)
                 }
-            }
+            },
     )
 }
 
